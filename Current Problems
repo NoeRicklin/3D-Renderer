@@ -1,0 +1,1 @@
+* The vertex-scaler in line 77 should be dynamicly generated in respect to the window length, the fov and the viewplane distance
