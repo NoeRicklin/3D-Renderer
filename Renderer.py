@@ -19,8 +19,9 @@ viewplain_dis = 50
 speed = 5
 rot_speed = .1
 
-p1 = (512, 300)
-p2 = (400, 310)
+vertices = [(300, 400), (500, 120), (650, 100)]
+vert_colors = ["Blue", "Red", "Green"]
+edges = [(0, 1), (1, 2)]    # contains the indexes of the vertices in the vertices-array that share an edge
 
 
 def move_cam(pos, dir):     # camera controller to move the camera around with the keyboard
@@ -47,11 +48,11 @@ def draw_cam():     # displays the camera and its FOV legs to show its direction
 
     fov_leg1_vec = rot_vec(cam_dir, np.deg2rad(cam_fov/2))
     fov_leg1_end = va(cam_pos, sm(2000, fov_leg1_vec))
-    drawline(cam_pos, fov_leg1_end)
+    drawline(cam_pos, fov_leg1_end, "Yellow")
 
     fov_leg2_vec = rot_vec(cam_dir, -np.deg2rad(cam_fov / 2))
     fov_leg2_end = va(cam_pos, sm(2000, fov_leg2_vec))
-    drawline(cam_pos, fov_leg2_end)
+    drawline(cam_pos, fov_leg2_end, "Yellow")
 
 
 def project_to_screen(point):   # returns the coordinates of the point after being projected to the viewplain
@@ -64,6 +65,19 @@ def project_to_screen(point):   # returns the coordinates of the point after bei
             stretch_factor = viewplain_dis / (np.dot(cam_space_point, cam_dir))
             scaled_point = va(cam_pos, sm(stretch_factor, cam_space_point))
             return scaled_point
+
+
+def display_verts(show_global_vert=True):
+    for vertice in range(len(vertices)):
+        if show_global_vert: drawpoint(vertices[vertice], vert_colors[vertice])
+        drawpoint(project_to_screen(vertices[vertice]), vert_colors[vertice])
+
+
+def display_edges(show_global_edge=True):
+    for edge in edges:
+        vert1, vert2 = vertices[edge[0]], vertices[edge[1]]
+        if show_global_edge: drawline(vert1, vert2)
+        drawline(project_to_screen(vert1), project_to_screen(vert2))
 
 
 def va(vector1, vector2, sign=1):   # vector-addition
@@ -89,14 +103,13 @@ def rot_vec(vector, angle):     # rotate a vector, angle in radians
 
 
 def drawline(start, end, color="White", width=3):
-    pg.draw.line(screen, color, start, end, width)
+    if start and end:
+        pg.draw.line(screen, color, start, end, width)
 
 
 def drawpoint(position, color="White", size=5):
-    if position:
+    if position:    # allows for no position to be given
         pg.draw.circle(screen, color, position, size)
-    else:
-        pass
 
 
 while True:     # main loop in which everything happens
@@ -107,13 +120,10 @@ while True:     # main loop in which everything happens
     screen.fill("Black")
 
     cam_pos, cam_dir = move_cam(cam_pos, cam_dir)
-
-    drawpoint(p1)
-    drawpoint(project_to_screen(p1))
-
-    drawpoint(p2, "Blue")
-    drawpoint(project_to_screen(p2), "Blue")
     draw_cam()
+
+    display_verts()
+    display_edges()
 
     pg.display.update()
     clock.tick(60)
