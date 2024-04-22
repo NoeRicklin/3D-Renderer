@@ -10,8 +10,8 @@ dims = 1080, 720
 screen = pg.display.set_mode(dims)
 
 # camera settings
-cam_pos = (0, 0, 0)
-cam_dir = (0, 0, -1)
+cam_pos = (0, 0, 100)
+cam_dir = (0, 0, 1)
 cam_fov = 80    # horizontal field-of-view angle in degrees
 viewplane_dis = 50  # distance of the viewplane relative to the camera
 
@@ -19,8 +19,8 @@ speed = 5
 rot_speed = .05
 
 # vertices settings
-vertices = [(-50, -50, -300), (50, -50, -300), (50, 50, -300), (-50, 50, -300),
-            (-50, -50, -400), (50, -50, -400), (50, 50, -400), (-50, 50, -400)]
+vertices = [(-50, -50, 300), (50, -50, 300), (50, 50, 300), (-50, 50, 300),
+            (-50, -50, 400), (50, -50, 400), (50, 50, 400), (-50, 50, 400)]
 vert_colors = {1: "Blue"}
 edges = [(0, 1), (1, 2), (2, 3), (3, 0),
          (0, 4), (1, 5), (2, 6), (3, 7),
@@ -50,12 +50,12 @@ def move_cam(current_pos, current_dir):     # camera controller to move the came
 
     # rotation left/right
     if key_list[pg.K_LEFT]:
-        rotation = rot_speed
-    elif key_list[pg.K_RIGHT]:
         rotation = -rot_speed
+    elif key_list[pg.K_RIGHT]:
+        rotation = rot_speed
 
     cam_dir_new = rot_vec(current_dir, rotation)
-    cam_right_new = rot_vec(cam_dir_new, -np.pi / 2, "y")
+    cam_right_new = rot_vec(cam_dir_new, np.pi / 2, "y")
     cam_up_new = (0, 1, 0)
 
     move_vec = va(sm(velocity[0], cam_right_new), sm(velocity[1], cam_up_new), sm(velocity[2], cam_dir_new))
@@ -78,9 +78,12 @@ def draw_cam():     # displays the camera and its FOV legs to show its direction
 def project_to_screen(point):
     # the location of the point, if you imagine the camera to be at the center of a coordinate system, always pointing
     # in the y direction (it calculates the linear-combination of the point to the cam-dir and its normalvector)
-    cam_right = rot_vec(cam_dir, -np.pi/2, "y")
+    cam_right = rot_vec(cam_dir, np.pi/2, "y")
     cam_up = (0, 1, 0)
-    cam_space_point = tuple(np.linalg.solve([cam_right, cam_up, cam_dir], va(point, cam_pos, sign=-1)))
+
+    # converts the cameravectors into a list so that they can be used in the linear-combination algorhythm
+    cam_vecs = np.array([[cam_right[i], cam_up[i], cam_dir[i]] for i in range(3)])
+    cam_space_point = np.linalg.solve(cam_vecs, va(point, cam_pos, sign=-1))
 
     cam_and_point_dot = np.dot(cam_space_point, (0, 0, 1))
     point_angle = np.arccos(cam_and_point_dot / (magn(cam_space_point)))
