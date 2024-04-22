@@ -9,7 +9,6 @@ clock = pg.time.Clock()
 dims = 1080, 720
 screen = pg.display.set_mode(dims)
 
-
 # camera settings
 cam_pos = (0, 0, 0)
 cam_dir = (0, 0, -1)
@@ -19,6 +18,7 @@ viewplane_dis = 50  # distance of the viewplane relative to the camera
 speed = 5
 rot_speed = .05
 
+# vertices settings
 vertices = [(-50, -50, -300), (50, -50, -300), (50, 50, -300), (-50, 50, -300),
             (-50, -50, -400), (50, -50, -400), (50, 50, -400), (-50, 50, -400)]
 vert_colors = {1: "Blue"}
@@ -28,25 +28,42 @@ edges = [(0, 1), (1, 2), (2, 3), (3, 0),
 
 
 def move_cam(current_pos, current_dir):     # camera controller to move the camera around with the keyboard
-    velocity = 0
+    velocity = [0, 0, 0]
     rotation = 0
 
     key_list = pg.key.get_pressed()
+    # movement forward/backward
     if key_list[pg.K_w]:
-        velocity = speed
+        velocity[2] = speed
     elif key_list[pg.K_s]:
-        velocity = -speed
-    if key_list[pg.K_a]:
+        velocity[2] = -speed
+    # movement right/left
+    if key_list[pg.K_d]:
+        velocity[0] = speed
+    elif key_list[pg.K_a]:
+        velocity[0] = -speed
+    # movement up/down
+    if key_list[pg.K_SPACE]:
+        velocity[1] = speed
+    elif key_list[pg.K_LSHIFT]:
+        velocity[1] = -speed
+
+    # rotation left/right
+    if key_list[pg.K_LEFT]:
         rotation = rot_speed
-    elif key_list[pg.K_d]:
+    elif key_list[pg.K_RIGHT]:
         rotation = -rot_speed
 
     cam_dir_new = rot_vec(current_dir, rotation)
-    cam_pos_new = va(current_pos, sm(velocity, cam_dir_new))
+    cam_right_new = rot_vec(cam_dir_new, -np.pi / 2, "y")
+    cam_up_new = (0, 1, 0)
+
+    move_vec = va(sm(velocity[0], cam_right_new), sm(velocity[1], cam_up_new), sm(velocity[2], cam_dir_new))
+    cam_pos_new = va(current_pos, move_vec)
     return cam_pos_new, cam_dir_new
 
 
-def draw_cam():     # displays the camera and its FOV legs to show its direction
+def draw_cam():     # displays the camera and its FOV legs to show its direction (only used in 2D)
     drawpoint(cam_pos, "Yellow", 7)
 
     fov_leg1_vec = rot_vec(cam_dir, np.deg2rad(cam_fov/2))
@@ -63,7 +80,7 @@ def project_to_screen(point):
     # in the y direction (it calculates the linear-combination of the point to the cam-dir and its normalvector)
     cam_right = rot_vec(cam_dir, -np.pi/2, "y")
     cam_up = (0, 1, 0)
-    cam_space_point = tuple(np.linalg.solve([cam_right, cam_up, cam_dir], va(point, cam_pos, -1)))
+    cam_space_point = tuple(np.linalg.solve([cam_right, cam_up, cam_dir], va(point, cam_pos, sign=-1)))
 
     cam_and_point_dot = np.dot(cam_space_point, (0, 0, 1))
     point_angle = np.arccos(cam_and_point_dot / (magn(cam_space_point)))
@@ -72,8 +89,6 @@ def project_to_screen(point):
         stretch_factor = viewplane_dis / cam_and_point_dot
         cam_space_proj_point = sm(stretch_factor, cam_space_point)[:2]  # reduces the dimension of the points to 2D
         cam_space_proj_point = (cam_space_proj_point[0], -1*cam_space_proj_point[1])     # flips image because of pygame
-        screen_scaler = dims[0] / (2*viewplane_dis*np.tan(cam_fov))
-        print(screen_scaler)
         cam_space_proj_point = va(sm(7, cam_space_proj_point), sm(.5, dims))    # centers points on screen
         return cam_space_proj_point
 
@@ -97,8 +112,8 @@ def display_edges(show_global_edge=False):
         drawline(project_to_screen(vert1), project_to_screen(vert2))
 
 
-def va(vector1, vector2, sign=1):   # vector-addition
-    summed_vector = [vector1[i] + sign*vector2[i] for i in range(len(vector1))]
+def va(vector1, vector2, vector3=(0, 0, 0), sign=1):   # vector-addition (only use sign if adding 2 vectors)
+    summed_vector = [vector1[i] + sign*vector2[i] + vector3[i] for i in range(len(vector1))]
     return summed_vector
 
 
