@@ -22,9 +22,11 @@ rot_speed = .05
 vertices = [(-50, -50, 300), (50, -50, 300), (50, 50, 300), (-50, 50, 300),
             (-50, -50, 400), (50, -50, 400), (50, 50, 400), (-50, 50, 400)]
 vert_colors = {1: "Blue"}
+
 edges = [(0, 1), (1, 2), (2, 3), (3, 0),
          (0, 4), (1, 5), (2, 6), (3, 7),
          (4, 5), (5, 6), (6, 7), (7, 4)]  # contains the indexes of the vertices in the that share an edge
+edge_colors = {2: "Blue"}
 
 
 def move_cam(current_pos, current_dir):     # camera controller to move the camera around with the keyboard
@@ -108,11 +110,15 @@ def display_verts(show_global_vert=False):
 
 
 def display_edges(show_global_edge=False):
-    for edge in edges:
-        vert1, vert2 = vertices[edge[0]], vertices[edge[1]]
+    for edge_index in range(len(edges)):
+        try:
+            color = edge_colors[edge_index]
+        except KeyError:
+            color = "White"
+        vert1, vert2 = vertices[edges[edge_index][0]], vertices[edges[edge_index][1]]
         if show_global_edge:
-            drawline(vert1, vert2)
-        drawline(project_to_screen(vert1), project_to_screen(vert2))
+            drawline(vert1, vert2, color)
+        drawline(project_to_screen(vert1), project_to_screen(vert2), color)
 
 
 def va(vector1, vector2, vector3=(0, 0, 0), sign=1):   # vector-addition (only use sign if adding 2 vectors)
