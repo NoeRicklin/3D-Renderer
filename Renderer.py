@@ -1,12 +1,19 @@
-import pygame as pg
+import os
 from sys import exit
 import numpy as np
+import pyautogui as pag
+import pygame as pg
+import win32api
+import win32con
 
 # pygame settings
+dims = (1080, 720)
+window_pos = ((1920-dims[0])/2, (1080-dims[1])/2)
+os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % window_pos
+
 pg.init()
 clock = pg.time.Clock()
 
-dims = 1080, 720
 screen = pg.display.set_mode(dims)
 
 # camera settings
@@ -16,6 +23,9 @@ cam_up = (0, 1, 0)
 cam_dir = (0, 0, 1)
 cam_fov = 80    # horizontal field-of-view angle in degrees
 viewplane_dis = 50  # distance of the viewplane relative to the camera
+
+center = (0, 0)
+delta_mouse = (0, 0)
 
 speed = 5
 rot_speed = .05
@@ -31,7 +41,16 @@ edges = [(0, 1), (1, 2), (2, 3), (3, 0),
 edge_colors = {2: "Blue"}
 
 
-def move_cam():     # camera controller to move the camera around with the keyboard
+def move_mouse():
+    global delta_mouse
+    delta_mouse = va(pag.position(), center, sign=-1)
+    delta_mouse = (delta_mouse[1], delta_mouse[0])
+    win32api.mouse_event(win32con.MOUSEEVENTF_MOVE | win32con.MOUSEEVENTF_ABSOLUTE, int(center[0]/1920*65535.0+1),
+                         int(center[1]/1080*65535.0+1))
+
+
+def move_cam(mouse_control=True):     # camera controller to move the camera around with the keyboard
+    global cam_pos, cam_right, cam_up, cam_dir
     velocity = [0, 0, 0]
     rotation = [0, 0]   # only 2 values because the camera doesn't need to turn around the z axis
     key_list = pg.key.get_pressed()
@@ -51,28 +70,29 @@ def move_cam():     # camera controller to move the camera around with the keybo
     elif key_list[pg.K_LSHIFT]:
         velocity[1] = -speed
 
-    # rotation left/right
-    if key_list[pg.K_LEFT]:
-        rotation[1] = -rot_speed
-    elif key_list[pg.K_RIGHT]:
-        rotation[1] = rot_speed
-    # rotation up/downright
-    if key_list[pg.K_DOWN]:
-        rotation[0] = -rot_speed
-    elif key_list[pg.K_UP]:
-        rotation[0] = rot_speed
+    if mouse_control:
+        rotation = sm(0.005, delta_mouse)
+    else:
+        # rotation left/right
+        if key_list[pg.K_LEFT]:
+            rotation[1] = -rot_speed
+        elif key_list[pg.K_RIGHT]:
+            rotation[1] = rot_speed
+        # rotation up/downright
+        if key_list[pg.K_DOWN]:
+            rotation[0] = -rot_speed
+        elif key_list[pg.K_UP]:
+            rotation[0] = rot_speed
 
-    # x-axis rotation
-    global cam_right, cam_up, cam_dir
+    # apply x-axis rotation
     cam_up, cam_dir = rot_vec(cam_up, rotation[0], cam_right), rot_vec(cam_dir, rotation[0], cam_right)
-    # y-axis rotation (rotation around the global y-axis so that it doesn't rotate around the z-axis
+    # apply y-axis rotation (rotation around the global y-axis so that it doesn't rotate around the z-axis
     cam_right = rot_vec(cam_right, rotation[1], (0, 1, 0))
     cam_up = rot_vec(cam_up, rotation[1], (0, 1, 0))
     cam_dir = rot_vec(cam_dir, rotation[1], (0, 1, 0))
 
     move_vec = va(sm(velocity[0], cam_right), sm(velocity[1], cam_up), sm(velocity[2], cam_dir))
-    cam_pos_new = va(cam_pos, move_vec)
-    return cam_pos_new
+    cam_pos = va(cam_pos, move_vec)
 
 
 def draw_cam():     # displays the camera and its FOV legs to show its direction (only used in 2D)
@@ -161,14 +181,19 @@ def drawpoint(position, color="White", size=5):
         pg.draw.circle(screen, color, position, size)
 
 
+center = va(window_pos, sm(0.5, dims))   # center of the screen in screen coordinates
+pg.mouse.set_visible(False)
+move_mouse()
 while True:     # main loop in which everything happens
     for event in pg.event.get():
-        if event.type == pg.QUIT:
+        if event.type == pg.QUIT or pg.key.get_pressed()[pg.K_ESCAPE]:
+            pg.mouse.set_visible(True)
             pg.quit()
             exit()
     screen.fill("Black")
 
-    cam_pos = move_cam()
+    move_mouse()
+    move_cam()
 
     display_edges()
     display_verts()
