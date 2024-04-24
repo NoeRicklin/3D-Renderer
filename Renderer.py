@@ -11,8 +11,10 @@ screen = pg.display.set_mode(dims)
 
 # camera settings
 cam_pos = (0, 0, 100)
+cam_right = (1, 0, 0)
+cam_up = (0, 1, 0)
 cam_dir = (0, 0, 1)
-cam_fov = 80    # horizontal field-of-view angle in degrees
+cam_fov = 80  # horizontal field-of-view angle in degrees
 viewplane_dis = 50  # distance of the viewplane relative to the camera
 
 speed = 5
@@ -29,10 +31,9 @@ edges = [(0, 1), (1, 2), (2, 3), (3, 0),
 edge_colors = {2: "Blue"}
 
 
-def move_cam(current_pos, current_dir):     # camera controller to move the camera around with the keyboard
+def move_cam():  # camera controller to move the camera around with the keyboard
     velocity = [0, 0, 0]
-    rotation = 0
-
+    rotation = [0, 0]  # only 2 values because the camera doesn't need to turn around the z axis
     key_list = pg.key.get_pressed()
     # movement forward/backward
     if key_list[pg.K_w]:
@@ -52,23 +53,32 @@ def move_cam(current_pos, current_dir):     # camera controller to move the came
 
     # rotation left/right
     if key_list[pg.K_LEFT]:
-        rotation = -rot_speed
+        rotation[1] = -rot_speed
     elif key_list[pg.K_RIGHT]:
-        rotation = rot_speed
+        rotation[1] = rot_speed
+    # rotation up/downright
+    if key_list[pg.K_DOWN]:
+        rotation[0] = -rot_speed
+    elif key_list[pg.K_UP]:
+        rotation[0] = rot_speed
 
-    cam_dir_new = rot_vec(current_dir, rotation)
-    cam_right_new = rot_vec(cam_dir_new, np.pi / 2, "y")
-    cam_up_new = (0, 1, 0)
+    # x-axis rotation
+    global cam_right, cam_up, cam_dir
+    cam_up, cam_dir = rot_vec(cam_up, rotation[0], cam_right), rot_vec(cam_dir, rotation[0], cam_right)
+    # y-axis rotation (rotation around the global y-axis so that it doesn't rotate around the z-axis
+    cam_right = rot_vec(cam_right, rotation[1], (0, 1, 0))
+    cam_up = rot_vec(cam_up, rotation[1], (0, 1, 0))
+    cam_dir = rot_vec(cam_dir, rotation[1], (0, 1, 0))
 
-    move_vec = va(sm(velocity[0], cam_right_new), sm(velocity[1], cam_up_new), sm(velocity[2], cam_dir_new))
-    cam_pos_new = va(current_pos, move_vec)
-    return cam_pos_new, cam_dir_new
+    move_vec = va(sm(velocity[0], cam_right), sm(velocity[1], cam_up), sm(velocity[2], cam_dir))
+    cam_pos_new = va(cam_pos, move_vec)
+    return cam_pos_new
 
 
-def draw_cam():     # displays the camera and its FOV legs to show its direction (only used in 2D)
+def draw_cam():  # displays the camera and its FOV legs to show its direction (only used in 2D)
     drawpoint(cam_pos, "Yellow", 7)
 
-    fov_leg1_vec = rot_vec(cam_dir, np.deg2rad(cam_fov/2))
+    fov_leg1_vec = rot_vec(cam_dir, np.deg2rad(cam_fov / 2))
     fov_leg1_end = va(cam_pos, sm(2000, fov_leg1_vec))
     drawline(cam_pos, fov_leg1_end, "Yellow")
 
@@ -80,9 +90,6 @@ def draw_cam():     # displays the camera and its FOV legs to show its direction
 def project_to_screen(point):
     # the location of the point, if you imagine the camera to be at the center of a coordinate system, always pointing
     # in the y direction (it calculates the linear-combination of the point to the cam-dir and its normalvector)
-    cam_right = rot_vec(cam_dir, np.pi/2, "y")
-    cam_up = (0, 1, 0)
-
     # converts the cameravectors into a list so that they can be used in the linear-combination algorhythm
     cam_vecs = np.array([[cam_right[i], cam_up[i], cam_dir[i]] for i in range(3)])
     cam_space_point = np.linalg.solve(cam_vecs, va(point, cam_pos, sign=-1))
@@ -90,11 +97,11 @@ def project_to_screen(point):
     cam_and_point_dot = np.dot(cam_space_point, (0, 0, 1))
     point_angle = np.arccos(cam_and_point_dot / (magn(cam_space_point)))
 
-    if point_angle < np.pi/2:   # checks if the point is visable
+    if point_angle < np.pi / 2:  # checks if the point is visable
         stretch_factor = viewplane_dis / cam_and_point_dot
         cam_space_proj_point = sm(stretch_factor, cam_space_point)[:2]  # reduces the dimension of the points to 2D
-        cam_space_proj_point = (cam_space_proj_point[0], -1*cam_space_proj_point[1])     # flips image because of pygame
-        cam_space_proj_point = va(sm(7, cam_space_proj_point), sm(.5, dims))    # centers points on screen
+        cam_space_proj_point = (cam_space_proj_point[0], -1 * cam_space_proj_point[1])  # flips image because of pygame
+        cam_space_proj_point = va(sm(7, cam_space_proj_point), sm(.5, dims))  # centers points on screen
         return cam_space_proj_point
 
 
@@ -121,39 +128,26 @@ def display_edges(show_global_edge=False):
         drawline(project_to_screen(vert1), project_to_screen(vert2), color)
 
 
-def va(vector1, vector2, vector3=(0, 0, 0), sign=1):   # vector-addition (only use sign if adding 2 vectors)
-    summed_vector = [vector1[i] + sign*vector2[i] + vector3[i] for i in range(len(vector1))]
+def va(vector1, vector2, vector3=(0, 0, 0), sign=1):  # vector-addition (only use sign if adding 2 vectors)
+    summed_vector = [vector1[i] + sign * vector2[i] + vector3[i] for i in range(len(vector1))]
     return summed_vector
 
 
-def sm(scalar, vector):     # scalar-multiplication of a vector
+def sm(scalar, vector):  # scalar-multiplication of a vector
     scaled_vector = [scalar * element for element in vector]
     return scaled_vector
 
 
-def magn(vector):   # get the magnitude of a vector
-    magnitude = (np.sum([element**2 for element in vector])) ** 0.5
+def magn(vector):  # get the magnitude of a vector
+    magnitude = (np.sum([element ** 2 for element in vector])) ** 0.5
     return magnitude
 
 
-def rot_vec(vector, angle, axis="y"):     # rotate a vector, angle in radians
-    rot_mat = [[1, 0, 0],
-               [0, 1, 0],
-               [0, 0, 1]]
-    if axis == "x":
-        rot_mat = [[1, 0, 0],
-                   [0, np.cos(angle), -np.sin(angle)],
-                   [0, np.sin(angle), np.cos(angle)]]
-    elif axis == "y":
-        rot_mat = [[np.cos(angle), 0, np.sin(angle)],
-                   [0, 1, 0],
-                   [-np.sin(angle), 0, np.cos(angle)]]
-    elif axis == "z":
-        rot_mat = [[np.cos(angle), -np.sin(angle), 0],
-                   [np.sin(angle), np.cos(angle), 0],
-                   [0, 0, 1]]
-
-    new_vector = np.matmul(rot_mat, vector)
+def rot_vec(vector, angle, axis=(0, 1, 0)):  # rotate a vector around the axis, angle in radians
+    dot = np.dot(axis, vector)
+    cos = np.cos(angle)
+    sin = np.sin(angle)
+    new_vector = va(sm(dot * (1 - cos), axis), sm(cos, vector), sm(sin, lambda x, y: np.cross(x, y)))
     return new_vector
 
 
@@ -163,18 +157,18 @@ def drawline(start, end, color="White", width=3):
 
 
 def drawpoint(position, color="White", size=5):
-    if position:    # allows for no position to be given
+    if position:  # allows for no position to be given
         pg.draw.circle(screen, color, position, size)
 
 
-while True:     # main loop in which everything happens
+while True:  # main loop in which everything happens
     for event in pg.event.get():
         if event.type == pg.QUIT:
             pg.quit()
             exit()
     screen.fill("Black")
 
-    cam_pos, cam_dir = move_cam(cam_pos, cam_dir)
+    cam_pos = move_cam()
 
     display_edges()
     display_verts()
