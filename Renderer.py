@@ -14,7 +14,7 @@ cam_pos = (0, 0, 100)
 cam_right = (1, 0, 0)
 cam_up = (0, 1, 0)
 cam_dir = (0, 0, 1)
-cam_fov = 80  # horizontal field-of-view angle in degrees
+cam_fov = 80    # horizontal field-of-view angle in degrees
 viewplane_dis = 50  # distance of the viewplane relative to the camera
 
 speed = 5
@@ -31,9 +31,9 @@ edges = [(0, 1), (1, 2), (2, 3), (3, 0),
 edge_colors = {2: "Blue"}
 
 
-def move_cam():  # camera controller to move the camera around with the keyboard
+def move_cam():     # camera controller to move the camera around with the keyboard
     velocity = [0, 0, 0]
-    rotation = [0, 0]  # only 2 values because the camera doesn't need to turn around the z axis
+    rotation = [0, 0]   # only 2 values because the camera doesn't need to turn around the z axis
     key_list = pg.key.get_pressed()
     # movement forward/backward
     if key_list[pg.K_w]:
@@ -75,10 +75,10 @@ def move_cam():  # camera controller to move the camera around with the keyboard
     return cam_pos_new
 
 
-def draw_cam():  # displays the camera and its FOV legs to show its direction (only used in 2D)
+def draw_cam():     # displays the camera and its FOV legs to show its direction (only used in 2D)
     drawpoint(cam_pos, "Yellow", 7)
 
-    fov_leg1_vec = rot_vec(cam_dir, np.deg2rad(cam_fov / 2))
+    fov_leg1_vec = rot_vec(cam_dir, np.deg2rad(cam_fov/2))
     fov_leg1_end = va(cam_pos, sm(2000, fov_leg1_vec))
     drawline(cam_pos, fov_leg1_end, "Yellow")
 
@@ -97,11 +97,11 @@ def project_to_screen(point):
     cam_and_point_dot = np.dot(cam_space_point, (0, 0, 1))
     point_angle = np.arccos(cam_and_point_dot / (magn(cam_space_point)))
 
-    if point_angle < np.pi / 2:  # checks if the point is visable
+    if point_angle < np.pi/2:   # checks if the point is visable
         stretch_factor = viewplane_dis / cam_and_point_dot
         cam_space_proj_point = sm(stretch_factor, cam_space_point)[:2]  # reduces the dimension of the points to 2D
-        cam_space_proj_point = (cam_space_proj_point[0], -1 * cam_space_proj_point[1])  # flips image because of pygame
-        cam_space_proj_point = va(sm(7, cam_space_proj_point), sm(.5, dims))  # centers points on screen
+        cam_space_proj_point = (cam_space_proj_point[0], -1*cam_space_proj_point[1])     # flips image because of pygame
+        cam_space_proj_point = va(sm(7, cam_space_proj_point), sm(.5, dims))    # centers points on screen
         return cam_space_proj_point
 
 
@@ -128,26 +128,26 @@ def display_edges(show_global_edge=False):
         drawline(project_to_screen(vert1), project_to_screen(vert2), color)
 
 
-def va(vector1, vector2, vector3=(0, 0, 0), sign=1):  # vector-addition (only use sign if adding 2 vectors)
-    summed_vector = [vector1[i] + sign * vector2[i] + vector3[i] for i in range(len(vector1))]
+def va(vector1, vector2, vector3=(0, 0, 0), sign=1):   # vector-addition (only use sign if adding 2 vectors)
+    summed_vector = [vector1[i] + sign*vector2[i] + vector3[i] for i in range(len(vector1))]
     return summed_vector
 
 
-def sm(scalar, vector):  # scalar-multiplication of a vector
+def sm(scalar, vector):     # scalar-multiplication of a vector
     scaled_vector = [scalar * element for element in vector]
     return scaled_vector
 
 
-def magn(vector):  # get the magnitude of a vector
-    magnitude = (np.sum([element ** 2 for element in vector])) ** 0.5
+def magn(vector):   # get the magnitude of a vector
+    magnitude = (np.sum([element**2 for element in vector])) ** 0.5
     return magnitude
 
 
-def rot_vec(vector, angle, axis=(0, 1, 0)):  # rotate a vector around the axis, angle in radians
+def rot_vec(vector, angle, axis=(0, 1, 0)):     # rotate a vector around the axis, angle in radians
     dot = np.dot(axis, vector)
     cos = np.cos(angle)
     sin = np.sin(angle)
-    new_vector = va(sm(dot * (1 - cos), axis), sm(cos, vector), sm(sin, lambda x, y: np.cross(x, y)))
+    new_vector = va(sm(dot*(1-cos), axis), sm(cos, vector), sm(sin, np.cross(axis, vector)))
     return new_vector
 
 
@@ -157,11 +157,11 @@ def drawline(start, end, color="White", width=3):
 
 
 def drawpoint(position, color="White", size=5):
-    if position:  # allows for no position to be given
+    if position:    # allows for no position to be given
         pg.draw.circle(screen, color, position, size)
 
 
-while True:  # main loop in which everything happens
+while True:     # main loop in which everything happens
     for event in pg.event.get():
         if event.type == pg.QUIT:
             pg.quit()
