@@ -1,3 +1,4 @@
-* The vertex-scaler in line 77 should be dynamicly generated in respect to the window length, the fov and the viewplane distance
+* the vertex-scaler in line 77 should be dynamicly generated in respect to the window length, the fov and the viewplane distance
 * camera rotation function is a little messy
-* Camera can rotate indefinitely around its x axis, even though it should stop if its looking fully up/down
+* camera can rotate indefinitely around its x axis, even though it should stop if its looking fully up/down
+* camera-speed shouldn't be dependent on fps

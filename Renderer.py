@@ -1,4 +1,5 @@
 import os
+import time
 from sys import exit
 import numpy as np
 import pyautogui as pag
@@ -12,6 +13,7 @@ window_pos = ((1920-dims[0])/2, (1080-dims[1])/2)
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % window_pos
 
 pg.init()
+stime = time.time()
 clock = pg.time.Clock()
 
 screen = pg.display.set_mode(dims)
@@ -24,8 +26,7 @@ cam_dir = (0, 0, 1)
 cam_fov = 80    # horizontal field-of-view angle in degrees
 viewplane_dis = 50  # distance of the viewplane relative to the camera
 
-center = (0, 0)
-delta_mouse = (0, 0)
+mouse_pos = (0, 0)
 
 speed = 5
 rot_speed = .05
@@ -42,11 +43,13 @@ edge_colors = {2: "Blue"}
 
 
 def move_mouse():
-    global delta_mouse
-    delta_mouse = va(pag.position(), center, sign=-1)
-    delta_mouse = (delta_mouse[1], delta_mouse[0])
+    global mouse_pos
+    current_mouse_pos = pag.position()
+    delta_mouse = va(mouse_pos, current_mouse_pos, sign=-1)[::-1]
     win32api.mouse_event(win32con.MOUSEEVENTF_MOVE | win32con.MOUSEEVENTF_ABSOLUTE, int(center[0]/1920*65535.0+1),
                          int(center[1]/1080*65535.0+1))
+    mouse_pos = current_mouse_pos
+    return delta_mouse
 
 
 def move_cam(mouse_control=True):     # camera controller to move the camera around with the keyboard
@@ -71,7 +74,7 @@ def move_cam(mouse_control=True):     # camera controller to move the camera aro
         velocity[1] = -speed
 
     if mouse_control:
-        rotation = sm(0.005, delta_mouse)
+        rotation = sm(0.005, move_mouse())
     else:
         # rotation left/right
         if key_list[pg.K_LEFT]:
@@ -182,14 +185,18 @@ def drawpoint(position, color="White", size=5):
 
 
 center = va(window_pos, sm(0.5, dims))   # center of the screen in screen coordinates
-pg.mouse.set_visible(False)
+
 move_mouse()
 while True:     # main loop in which everything happens
     for event in pg.event.get():
         if event.type == pg.QUIT or pg.key.get_pressed()[pg.K_ESCAPE]:
-            pg.mouse.set_visible(True)
             pg.quit()
             exit()
+    if not pg.mouse.get_focused():
+        pg.mouse.set_visible(True)
+        continue
+    pg.mouse.set_visible(False)
+
     screen.fill("Black")
 
     move_mouse()
@@ -198,5 +205,6 @@ while True:     # main loop in which everything happens
     display_edges()
     display_verts()
 
+    # print(1/-(stime - (stime := time.time())))  # show fps
     pg.display.update()
     clock.tick(60)
