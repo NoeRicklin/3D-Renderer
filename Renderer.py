@@ -29,18 +29,25 @@ models = []
 
 
 class Model:
-    def __init__(self, verts,  lines, vcols=None, ecols=None):
+    def __init__(self, center, verts,  lines, scale=1, vcols=None, ecols=None):
         if vcols is None:
             vcols = {}
         if ecols is None:
             ecols = {}
-        self.vertices = verts
+        self.center = center
+        self.vertices = [sm(scale, vert) for vert in verts]
         self.edges = lines  # contains the indexes of the vertices in the that share an edge
 
         self.vert_colors = vcols    # color of the points
         self.edge_colors = ecols    # color of the edges
 
         models.append(self)
+
+    def move_obj_to(self, pos):
+        self.center = pos
+
+    def rot_obj(self, angle, axix=(0, 0, 1)):
+        self.vertices = [rot_vec(vertex, angle, axix) for vertex in self.vertices]
 
 
 class Camera:
@@ -55,26 +62,23 @@ class Camera:
         self.rot_speed = .05
         self.mouse_control = mouse_control
 
-    def display_verts(self, obj, show_global_vert=False):
+    def display_verts(self, obj):
         for vertex_index in range(len(obj.vertices)):
             try:
                 color = obj.vert_colors[vertex_index]
             except KeyError:
                 color = "White"
-            if show_global_vert:
-                drawpoint(obj.vertices[vertex_index], color)
-            drawpoint(self.project_to_screen(obj.vertices[vertex_index]), color)
+            drawpoint(self.project_to_screen(va(obj.center, obj.vertices[vertex_index])), color)
 
-    def display_edges(self, obj, show_global_edge=False):
+    def display_edges(self, obj):
         for edge_index in range(len(obj.edges)):
             try:
                 color = obj.edge_colors[edge_index]
             except KeyError:
                 color = "White"
-            vert1, vert2 = obj.vertices[obj.edges[edge_index][0]], obj.vertices[obj.edges[edge_index][1]]
+            vert1 = va(obj.center, obj.vertices[obj.edges[edge_index][0]])
+            vert2 = va(obj.center, obj.vertices[obj.edges[edge_index][1]])
             drawline(self.project_to_screen(vert1), self.project_to_screen(vert2), color)
-            if show_global_edge:
-                drawline(vert1, vert2, color)
 
     def project_to_screen(self, point):
         # the location of the point, if you imagine the camera to be at the center of a coordinate system, always 
@@ -153,8 +157,8 @@ def move_mouse():
     global mouse_pos
     current_mouse_pos = pag.position()
     delta_mouse = va(mouse_pos, current_mouse_pos, sign=-1)[::-1]
-    win32api.mouse_event(win32con.MOUSEEVENTF_MOVE | win32con.MOUSEEVENTF_ABSOLUTE, int(center[0]/1920*65535.0+1),
-                         int(center[1]/1080*65535.0+1))
+    win32api.mouse_event(win32con.MOUSEEVENTF_MOVE | win32con.MOUSEEVENTF_ABSOLUTE, int(window_center[0]/1920*65535.0),
+                         int(window_center[1]/1080*65535.0))
     mouse_pos = current_mouse_pos
     return delta_mouse
 
@@ -175,6 +179,7 @@ def magn(vector):   # get the magnitude of a vector
 
 
 def rot_vec(vector, angle, axis=(0, 1, 0)):     # rotate a vector around the axis, angle in radians
+    axis = sm(1/magn(axis), axis)
     dot = np.dot(axis, vector)
     cos = np.cos(angle)
     sin = np.sin(angle)
@@ -194,11 +199,13 @@ def drawpoint(position, color="White", size=5):
 
 cam = Camera((0, 0, 100))
 
-Cube = Model([(-50, -50, 300), (50, -50, 300), (50, 50, 300), (-50, 50, 300),
-              (-50, -50, 400), (50, -50, 400), (50, 50, 400), (-50, 50, 400)],
-             [(0, 1), (1, 2), (2, 3), (3, 0), (0, 4), (1, 5), (2, 6), (3, 7), (4, 5), (5, 6), (6, 7), (7, 4)])
+Cube = Model((0, 0, 300),
+             [(-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, 0.5, -0.5),
+              (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, 0.5)],
+             [(0, 1), (1, 2), (2, 3), (3, 0), (0, 4), (1, 5), (2, 6), (3, 7), (4, 5), (5, 6), (6, 7), (7, 4)],
+             100)
 
-center = va(window_pos, sm(0.5, dims))   # center of the screen in screen coordinates
+window_center = va(window_pos, sm(0.5, dims))   # center of the window in screen coordinates
 move_mouse()
 
 while True:     # main loop in which everything happens
@@ -220,6 +227,6 @@ while True:     # main loop in which everything happens
         cam.display_edges(model)
         cam.display_verts(model)
 
-    # print(1/-(stime - (stime := time.time())))  # show fps
     pg.display.update()
+    # print(1/-(stime - (stime := time.time())))  # show fps
     clock.tick(60)
