@@ -29,17 +29,17 @@ models = []
 
 
 class Model:
-    def __init__(self, center, verts,  lines, scale=1, vcols=None, ecols=None):
-        if vcols is None:
-            vcols = {}
-        if ecols is None:
-            ecols = {}
+    def __init__(self, center, vertices,  triangles, scale=1, vertex_colors=None, trg_colors=None):
+        if vertex_colors is None:
+            vertex_colors = {}
+        if trg_colors is None:
+            trg_colors = {}
         self.center = center
-        self.vertices = [sm(scale, vert) for vert in verts]
-        self.edges = lines  # contains the indexes of the vertices in the that share an edge
+        self.vertices = [sm(scale, vertex) for vertex in vertices]
+        self.triangles = triangles  # contains the indexes of the vertices in the that share an edge
 
-        self.vert_colors = vcols    # color of the points
-        self.edge_colors = ecols    # color of the edges
+        self.vertex_colors = vertex_colors    # color of the points
+        self.trg_colors = trg_colors    # color of the edges
 
         models.append(self)
 
@@ -65,20 +65,23 @@ class Camera:
     def display_verts(self, obj):
         for vertex_index in range(len(obj.vertices)):
             try:
-                color = obj.vert_colors[vertex_index]
+                color = obj.vertex_colors[vertex_index]
             except KeyError:
                 color = "White"
             drawpoint(self.project_to_screen(va(obj.center, obj.vertices[vertex_index])), color)
 
-    def display_edges(self, obj):
-        for edge_index in range(len(obj.edges)):
+    def display_triangles(self, obj):
+        for trg_index in range(len(obj.triangles)):
             try:
-                color = obj.edge_colors[edge_index]
+                color = obj.trg_colors[trg_index]
             except KeyError:
                 color = "White"
-            vert1 = va(obj.center, obj.vertices[obj.edges[edge_index][0]])
-            vert2 = va(obj.center, obj.vertices[obj.edges[edge_index][1]])
+            vert1 = va(obj.center, obj.vertices[obj.triangles[trg_index][0]])
+            vert2 = va(obj.center, obj.vertices[obj.triangles[trg_index][1]])
+            vert3 = va(obj.center, obj.vertices[obj.triangles[trg_index][2]])
             drawline(self.project_to_screen(vert1), self.project_to_screen(vert2), color)
+            drawline(self.project_to_screen(vert2), self.project_to_screen(vert3), color)
+            drawline(self.project_to_screen(vert3), self.project_to_screen(vert1), color)
 
     def project_to_screen(self, point):
         # the location of the point, if you imagine the camera to be at the center of a coordinate system, always 
@@ -88,9 +91,8 @@ class Camera:
         cam_space_point = np.linalg.solve(cam_vecs, va(point, self.pos, sign=-1))
 
         cam_and_point_dot = np.dot(cam_space_point, (0, 0, 1))
-        point_angle = np.arccos(cam_and_point_dot / (magn(cam_space_point)))
 
-        if point_angle < np.pi / 2:  # checks if the point is visable
+        if cam_and_point_dot > 0:  # checks if the point is visable
             stretch_factor = self.viewplane_dis / cam_and_point_dot
             cam_space_proj_point = sm(stretch_factor, cam_space_point)[:2]  # reduces the dimension of the points to 2D
             cam_space_proj_point = (cam_space_proj_point[0], -1 * cam_space_proj_point[1])  # flips image (pygame-BS)
@@ -202,8 +204,12 @@ cam = Camera((0, 0, 100))
 Cube = Model((0, 0, 300),
              [(-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, 0.5, -0.5),
               (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, 0.5)],
-             [(0, 1), (1, 2), (2, 3), (3, 0), (0, 4), (1, 5), (2, 6), (3, 7), (4, 5), (5, 6), (6, 7), (7, 4)],
-             100)
+             # triangle-vertices must go clockwise when looked at from outside the model
+             [(0, 3, 1), (3, 2, 1), (3, 7, 2), (7, 6, 2), (4, 6, 7), (4, 5, 6), (0, 5, 4), (0, 1, 5), (4, 7, 0),
+              (1, 2, 5), (2, 6, 5)],
+             100,
+             {},
+             {0: "Blue"})
 
 window_center = va(window_pos, sm(0.5, dims))   # center of the window in screen coordinates
 move_mouse()
@@ -224,7 +230,7 @@ while True:     # main loop in which everything happens
     cam.move_cam()
 
     for model in models:
-        cam.display_edges(model)
+        cam.display_triangles(model)
         cam.display_verts(model)
 
     pg.display.update()
