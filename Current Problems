@@ -1,3 +1,4 @@
 * the vertex-scaler in line 77 should be dynamicly generated in respect to the window length, the fov and the viewplane distance
 * camera can rotate indefinitely around its x axis, even though it should stop if its looking fully up/down (possible solution includes checking that
 * camera-speed shouldn't be dependent on fps
+* all triangles are rendered, even if the are hidden behind others

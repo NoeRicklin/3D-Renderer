@@ -15,7 +15,7 @@ Camera Rotation: mouse
 
 # pygame settings
 dims = (1080, 720)
-window_pos = ((1920-dims[0])/2, (1080-dims[1])/2)
+window_pos = ((1920 - dims[0]) / 2, (1080 - dims[1]) / 2)
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % window_pos
 mouse_pos = (0, 0)
 
@@ -29,25 +29,56 @@ models = []
 
 
 class Model:
-    def __init__(self, center, vertices,  triangles, scale=1, vertex_colors=None, trg_colors=None):
-        if vertex_colors is None:
-            vertex_colors = {}
-        if trg_colors is None:
-            trg_colors = {}
+    def __init__(self, center, vertices, triangles, scale=1, trg_colors={}):
         self.center = center
         self.vertices = [sm(scale, vertex) for vertex in vertices]
-        self.triangles = triangles  # contains the indexes of the vertices in the that share an edge
-
-        self.vertex_colors = vertex_colors    # color of the points
-        self.trg_colors = trg_colors    # color of the edges
+        self.triangles = []
+        for index, triangle in enumerate(triangles):
+            trg_verts = [self.vertices[index] for index in triangle]
+            try:
+                trg_col = trg_colors[index]
+                self.triangles.append(Triangle(trg_verts, trg_col))
+            except KeyError:
+                self.triangles.append(Triangle(trg_verts))
 
         models.append(self)
+
+    def order_triangles(self):
+        self.triangles = sorted(self.triangles, key=lambda triangle: magn(va(cam.pos, va(self.center, triangle.center), sign=-1)), reverse=True)
+
+    def get_trg_center(self, triangle):
+        points = [self.vertices[triangle[i]] for i in range(3)]
+        points_x = [points[i][0] for i in range(3)]
+        points_y = [points[i][1] for i in range(3)]
+        points_z = [points[i][2] for i in range(3)]
+
+        center_x = (min(points_x) + (max(points_x) - min(points_x)) / 2)
+        center_y = (min(points_y) + (max(points_y) - min(points_y)) / 2)
+        center_z = (min(points_z) + (max(points_z) - min(points_z)) / 2)
+        return center_x, center_y, center_z
 
     def move_obj_to(self, pos):
         self.center = pos
 
     def rot_obj(self, angle, axix=(0, 0, 1)):
         self.vertices = [rot_vec(vertex, angle, axix) for vertex in self.vertices]
+
+
+class Triangle:
+    def __init__(self, vertices, color="White"):
+        self.vertices = vertices
+        self.center = self.get_center()
+        self.color = color
+
+    def get_center(self):
+        points_x = [self.vertices[i][0] for i in range(3)]
+        points_y = [self.vertices[i][1] for i in range(3)]
+        points_z = [self.vertices[i][2] for i in range(3)]
+
+        center_x = (min(points_x) + (max(points_x) - min(points_x)) / 2)
+        center_y = (min(points_y) + (max(points_y) - min(points_y)) / 2)
+        center_z = (min(points_z) + (max(points_z) - min(points_z)) / 2)
+        return center_x, center_y, center_z
 
 
 class Camera:
@@ -71,17 +102,11 @@ class Camera:
             drawpoint(self.project_to_screen(va(obj.center, obj.vertices[vertex_index])), color)
 
     def display_triangles(self, obj):
-        for trg_index in range(len(obj.triangles)):
-            try:
-                color = obj.trg_colors[trg_index]
-            except KeyError:
-                color = "White"
-            vert1 = va(obj.center, obj.vertices[obj.triangles[trg_index][0]])
-            vert2 = va(obj.center, obj.vertices[obj.triangles[trg_index][1]])
-            vert3 = va(obj.center, obj.vertices[obj.triangles[trg_index][2]])
-            drawline(self.project_to_screen(vert1), self.project_to_screen(vert2), color)
-            drawline(self.project_to_screen(vert2), self.project_to_screen(vert3), color)
-            drawline(self.project_to_screen(vert3), self.project_to_screen(vert1), color)
+        for triangle in obj.triangles:
+            vert1 = self.project_to_screen(va(obj.center, triangle.vertices[0]))
+            vert2 = self.project_to_screen(va(obj.center, triangle.vertices[1]))
+            vert3 = self.project_to_screen(va(obj.center, triangle.vertices[2]))
+            drawtriangle(vert1, vert2, vert3, triangle.color)
 
     def project_to_screen(self, point):
         # the location of the point, if you imagine the camera to be at the center of a coordinate system, always 
@@ -159,34 +184,40 @@ def move_mouse():
     global mouse_pos
     current_mouse_pos = pag.position()
     delta_mouse = va(mouse_pos, current_mouse_pos, sign=-1)[::-1]
-    win32api.mouse_event(win32con.MOUSEEVENTF_MOVE | win32con.MOUSEEVENTF_ABSOLUTE, int(window_center[0]/1920*65535.0),
-                         int(window_center[1]/1080*65535.0))
+    win32api.mouse_event(win32con.MOUSEEVENTF_MOVE | win32con.MOUSEEVENTF_ABSOLUTE,
+                         int(window_center[0] / 1920 * 65535.0),
+                         int(window_center[1] / 1080 * 65535.0))
     mouse_pos = current_mouse_pos
     return delta_mouse
 
 
-def va(vector1, vector2, vector3=(0, 0, 0), sign=1):   # vector-addition (only use sign if adding 2 vectors)
-    summed_vector = [vector1[i] + sign*vector2[i] + vector3[i] for i in range(len(vector1))]
+def va(vector1, vector2, vector3=(0, 0, 0), sign=1):  # vector-addition (only use sign if adding 2 vectors)
+    summed_vector = [vector1[i] + sign * vector2[i] + vector3[i] for i in range(len(vector1))]
     return summed_vector
 
 
-def sm(scalar, vector):     # scalar-multiplication of a vector
+def sm(scalar, vector):  # scalar-multiplication of a vector
     scaled_vector = [scalar * element for element in vector]
     return scaled_vector
 
 
-def magn(vector):   # get the magnitude of a vector
-    magnitude = (np.sum([element**2 for element in vector])) ** 0.5
+def magn(vector):  # get the magnitude of a vector
+    magnitude = (np.sum([element ** 2 for element in vector])) ** 0.5
     return magnitude
 
 
-def rot_vec(vector, angle, axis=(0, 1, 0)):     # rotate a vector around the axis, angle in radians
-    axis = sm(1/magn(axis), axis)
+def rot_vec(vector, angle, axis=(0, 1, 0)):  # rotate a vector around the axis, angle in radians
+    axis = sm(1 / magn(axis), axis)
     dot = np.dot(axis, vector)
     cos = np.cos(angle)
     sin = np.sin(angle)
-    new_vector = va(sm(dot*(1-cos), axis), sm(cos, vector), sm(sin, np.cross(axis, vector)))
+    new_vector = va(sm(dot * (1 - cos), axis), sm(cos, vector), sm(sin, np.cross(axis, vector)))
     return new_vector
+
+
+def drawpoint(position, color="White", size=5):
+    if position:  # allows for no position to be given
+        pg.draw.circle(screen, color, position, size)
 
 
 def drawline(start, end, color="White", width=3):
@@ -194,9 +225,9 @@ def drawline(start, end, color="White", width=3):
         pg.draw.line(screen, color, start, end, width)
 
 
-def drawpoint(position, color="White", size=5):
-    if position:    # allows for no position to be given
-        pg.draw.circle(screen, color, position, size)
+def drawtriangle(p1, p2, p3, color="White"):
+    if p1 and p2 and p3:
+        pg.draw.polygon(screen, color, (p1, p2, p3))
 
 
 cam = Camera((0, 0, 100))
@@ -205,16 +236,15 @@ Cube = Model((0, 0, 300),
              [(-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, 0.5, -0.5),
               (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, 0.5)],
              # triangle-vertices must go clockwise when looked at from outside the model
-             [(0, 3, 1), (3, 2, 1), (3, 7, 2), (7, 6, 2), (4, 6, 7), (4, 5, 6), (0, 5, 4), (0, 1, 5), (4, 7, 0),
-              (1, 2, 5), (2, 6, 5)],
+             [(0, 3, 1), (3, 2, 1), (3, 7, 2), (7, 6, 2), (4, 6, 7), (4, 5, 6), (0, 5, 4), (0, 1, 5),
+              (4, 7, 0), (7, 3, 0), (1, 2, 5), (2, 6, 5)],
              100,
-             {},
-             {0: "Blue"})
+             {0: "Blue", 4: "Red", 10: "Green"})
 
-window_center = va(window_pos, sm(0.5, dims))   # center of the window in screen coordinates
+window_center = va(window_pos, sm(0.5, dims))  # center of the window in screen coordinates
 move_mouse()
 
-while True:     # main loop in which everything happens
+while True:  # main loop in which everything happens
     for event in pg.event.get():
         if event.type == pg.QUIT or pg.key.get_pressed()[pg.K_ESCAPE]:
             pg.quit()
@@ -230,8 +260,9 @@ while True:     # main loop in which everything happens
     cam.move_cam()
 
     for model in models:
+        model.order_triangles()
         cam.display_triangles(model)
-        cam.display_verts(model)
+        # cam.display_verts(model)
 
     pg.display.update()
     # print(1/-(stime - (stime := time.time())))  # show fps

@@ -7,3 +7,6 @@
 * 2024-04-25: Objekt- und Kameraklassen eingeführt um mehrere Instanzen davon nutzen zu können wenn benötigt. 
 Da jetzt auch viele Objekt- oder Kamera bezogene Funktionen in die Klassen gesteckt
 werden konnten ist der Code jetzt etwas übersichtlicher.
+* 2024-04-26: Dreiecke werden jetzt von zuhinterst bis zuvorderst gerendert um die richtigen Dreiecke schlussendlich zu 
+zeigen. Dieser Weg geht allerdings nur, wenn sich keine Dreiecke überlappen, was aber eigentlich hier gegeben ist. 
+Dreiecke sind jetzt auch eigene Klassen
