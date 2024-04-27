@@ -3,3 +3,4 @@
 * camera-speed shouldn't be dependent on fps
 * all triangles are rendered, even if the are hidden behind others
 * can't rotate object anymore
+* super laggy when part of a triangle is ofscreen

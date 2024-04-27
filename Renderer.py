@@ -19,7 +19,7 @@ window_pos = ((1920 - dims[0]) / 2, (1080 - dims[1]) / 2)
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % window_pos
 mouse_pos = (0, 0)
 
-light_source_dir = (1, 2, 3)
+light_source_dir = (50, -10000, 500)
 environment_light_percent = 0.3  # amount of illumination in spots without direct lighting (value between 0 and 1)
 
 pg.init()
@@ -34,7 +34,7 @@ models = []
 class Model:
     def __init__(self, center, vertices, triangles, trg_colors=(255, 255, 255), scale=1):
         self.center = center
-        self.vertices = [sm(scale, vertex) for vertex in vertices]
+        self.vertices = [sm(-scale, vertex) for vertex in vertices] # for this model specifically added minus sign before scale
         self.trg_colors = trg_colors
         self.triangles = []
         for index, triangle in enumerate(triangles):
@@ -90,6 +90,7 @@ class Triangle:
         return center_x, center_y, center_z
 
     def get_normal(self):  # vertices are assumed to be defined in clockwise-order when looked at from outside
+        global i
         v1 = va(self.vertices[1], self.vertices[0], sign=-1)
         v2 = va(self.vertices[2], self.vertices[1], sign=-1)
         normal_vector = norm(np.cross(v1, v2))
@@ -201,6 +202,26 @@ class Camera:
         drawline(self.pos, fov_leg2_end, "Yellow")
 
 
+def convert_obj_file(path):
+    file = open(path)
+    lines_str = file.read().split("\n")
+
+    vertices = []
+    triangles = []
+    for line in lines_str:
+        try:
+            if line[0] == "v":
+                vertex = [float(number) for number in line[2::].split(" ")]
+                vertices.append(vertex)
+            if line[0] == "f":
+                triangle = [int(index)-1 for index in line[2::].split(" ")]
+                triangles.append(triangle)
+        except:
+            continue
+    file.close()
+    return vertices, triangles
+
+
 def move_mouse():
     global mouse_pos
     current_mouse_pos = pag.position()
@@ -260,15 +281,18 @@ light_source_dir = norm(light_source_dir)
 
 cam = Camera((0, 0, 100))
 
-Cube = Model((0, 0, 300),
-             [(-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, 0.5, -0.5),
-              (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, 0.5)],
-             # triangle-vertices must go clockwise when looked at from outside the model
-             [(0, 3, 1), (3, 2, 1), (3, 7, 2), (7, 6, 2), (4, 6, 7), (4, 5, 6), (0, 5, 4), (0, 1, 5),
-              (4, 7, 0), (7, 3, 0), (1, 2, 5), (2, 6, 5)],
-             (255, 255, 255),
-             scale=100)
+# Cube = Model((0, 0, 300),
+#              [(-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, 0.5, -0.5),
+#               (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, 0.5)],
+#              # triangle-vertices must go clockwise when looked at from outside the model
+#              [(0, 3, 1), (3, 2, 1), (3, 7, 2), (7, 6, 2), (4, 6, 7), (4, 5, 6), (0, 5, 4), (0, 1, 5),
+#               (4, 7, 0), (7, 3, 0), (1, 2, 5), (2, 6, 5)],
+#              (255, 255, 255),
+#              scale=100)
+# models.append(Cube))
 
+vertices, triangles = convert_obj_file("Models/VideoShip.obj")
+Plane = Model((0, -300, 1000), vertices, triangles, scale=100, trg_colors=(255, 0, 0))
 
 window_center = va(window_pos, sm(0.5, dims))  # center of the window in screen coordinates
 move_mouse()
@@ -294,5 +318,5 @@ while True:  # main loop in which everything happens
         # cam.display_verts(model)
 
     pg.display.update()
-    # print(1/-(stime - (stime := time.time())))  # show fps
+    print(1/-(stime - (stime := time.time())))  # show fps
     clock.tick(60)
