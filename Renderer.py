@@ -1,9 +1,9 @@
 import os
-import time
 from sys import exit
-import numpy as np
-import pyautogui as pag
 import pygame as pg
+import numpy as np
+import time
+import pyautogui as pag
 import win32api
 import win32con
 
@@ -19,32 +19,40 @@ window_pos = ((1920 - dims[0]) / 2, (1080 - dims[1]) / 2)
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % window_pos
 mouse_pos = (0, 0)
 
+light_source_dir = (1, 2, 3)
+environment_light_percent = 0.3  # amount of illumination in spots without direct lighting (value between 0 and 1)
+
 pg.init()
+screen = pg.display.set_mode(dims)
+
 stime = time.time()
 clock = pg.time.Clock()
-
-screen = pg.display.set_mode(dims)
 
 models = []
 
 
 class Model:
-    def __init__(self, center, vertices, triangles, scale=1, trg_colors={}):
+    def __init__(self, center, vertices, triangles, trg_colors=(255, 255, 255), scale=1):
         self.center = center
         self.vertices = [sm(scale, vertex) for vertex in vertices]
+        self.trg_colors = trg_colors
         self.triangles = []
         for index, triangle in enumerate(triangles):
             trg_verts = [self.vertices[index] for index in triangle]
-            try:
-                trg_col = trg_colors[index]
+            if trg_colors is dict:
+                try:
+                    trg_col = self.trg_colors[index]
+                    self.triangles.append(Triangle(trg_verts, trg_col))
+                except KeyError:
+                    self.triangles.append(Triangle(trg_verts))
+            else:
+                trg_col = trg_colors
                 self.triangles.append(Triangle(trg_verts, trg_col))
-            except KeyError:
-                self.triangles.append(Triangle(trg_verts))
 
         models.append(self)
 
     def order_triangles(self):
-        self.triangles = sorted(self.triangles, key=lambda triangle: magn(va(cam.pos, va(self.center, triangle.center), sign=-1)), reverse=True)
+        self.triangles.sort(key=lambda trg: magn(va(cam.pos, va(self.center, trg.center), sign=-1)), reverse=True)
 
     def get_trg_center(self, triangle):
         points = [self.vertices[triangle[i]] for i in range(3)]
@@ -65,10 +73,11 @@ class Model:
 
 
 class Triangle:
-    def __init__(self, vertices, color="White"):
+    def __init__(self, vertices, color=(255, 255, 255)):
         self.vertices = vertices
         self.center = self.get_center()
-        self.color = color
+        self.normal = self.get_normal()
+        self.color = self.calc_brightness(color)
 
     def get_center(self):
         points_x = [self.vertices[i][0] for i in range(3)]
@@ -79,6 +88,16 @@ class Triangle:
         center_y = (min(points_y) + (max(points_y) - min(points_y)) / 2)
         center_z = (min(points_z) + (max(points_z) - min(points_z)) / 2)
         return center_x, center_y, center_z
+
+    def get_normal(self):  # vertices are assumed to be defined in clockwise-order when looked at from outside
+        v1 = va(self.vertices[1], self.vertices[0], sign=-1)
+        v2 = va(self.vertices[2], self.vertices[1], sign=-1)
+        normal_vector = norm(np.cross(v1, v2))
+        return normal_vector
+
+    def calc_brightness(self, max_col):
+        clamped_dot = max(0, np.dot(self.normal, light_source_dir))
+        return pg.Color(sm(environment_light_percent + clamped_dot - environment_light_percent*clamped_dot, max_col))
 
 
 class Camera:
@@ -158,15 +177,17 @@ class Camera:
             elif key_list[pg.K_UP]:
                 rotation[0] = self.rot_speed
 
+        self.rot_cam(rotation)
+        move_vec = va(sm(velocity[0], self.right), sm(velocity[1], self.up), sm(velocity[2], self.dir))
+        self.pos = va(self.pos, move_vec)
+
+    def rot_cam(self, rotation):
         # apply x-axis rotation
         self.up, self.dir = rot_vec(self.up, rotation[0], self.right), rot_vec(self.dir, rotation[0], self.right)
         # apply y-axis rotation (rotation around the global y-axis so that it doesn't rotate around the z-axis
         self.right = rot_vec(self.right, rotation[1], (0, 1, 0))
         self.up = rot_vec(self.up, rotation[1], (0, 1, 0))
         self.dir = rot_vec(self.dir, rotation[1], (0, 1, 0))
-
-        move_vec = va(sm(velocity[0], self.right), sm(velocity[1], self.up), sm(velocity[2], self.dir))
-        self.pos = va(self.pos, move_vec)
 
     def draw_cam(self):  # displays the camera and its FOV legs to show its direction (only used in 2D)
         drawpoint(self.pos, "Yellow", 7)
@@ -206,8 +227,13 @@ def magn(vector):  # get the magnitude of a vector
     return magnitude
 
 
+def norm(vector):  # get the normalized vector
+    norm_vec = sm(1/magn(vector), vector)
+    return norm_vec
+
+
 def rot_vec(vector, angle, axis=(0, 1, 0)):  # rotate a vector around the axis, angle in radians
-    axis = sm(1 / magn(axis), axis)
+    axis = norm(axis)
     dot = np.dot(axis, vector)
     cos = np.cos(angle)
     sin = np.sin(angle)
@@ -225,10 +251,12 @@ def drawline(start, end, color="White", width=3):
         pg.draw.line(screen, color, start, end, width)
 
 
-def drawtriangle(p1, p2, p3, color="White"):
+def drawtriangle(p1, p2, p3, color):
     if p1 and p2 and p3:
         pg.draw.polygon(screen, color, (p1, p2, p3))
 
+
+light_source_dir = norm(light_source_dir)
 
 cam = Camera((0, 0, 100))
 
@@ -238,8 +266,9 @@ Cube = Model((0, 0, 300),
              # triangle-vertices must go clockwise when looked at from outside the model
              [(0, 3, 1), (3, 2, 1), (3, 7, 2), (7, 6, 2), (4, 6, 7), (4, 5, 6), (0, 5, 4), (0, 1, 5),
               (4, 7, 0), (7, 3, 0), (1, 2, 5), (2, 6, 5)],
-             100,
-             {0: "Blue", 4: "Red", 10: "Green"})
+             (255, 255, 255),
+             scale=100)
+
 
 window_center = va(window_pos, sm(0.5, dims))  # center of the window in screen coordinates
 move_mouse()
