@@ -19,39 +19,31 @@ window_pos = ((1920 - dims[0]) / 2, (1080 - dims[1]) / 2)
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % window_pos
 mouse_pos = (0, 0)
 
-light_source_dir = (50, -10000, 500)
+light_source_dir = (0, 200, -500)
 environment_light_percent = 0.3  # amount of illumination in spots without direct lighting (value between 0 and 1)
 
 pg.init()
 screen = pg.display.set_mode(dims)
 
 stime = time.time()
+dtime = 0
 clock = pg.time.Clock()
 
 models = []
 
 
 class Model:
-    def __init__(self, center, vertices, triangles, trg_colors=(255, 255, 255), scale=1):
+    def __init__(self, center, vertices, triangles, color=(255, 255, 255), scale=1):
         self.center = center
-        self.vertices = [sm(-scale, vertex) for vertex in vertices] # for this model specifically added minus sign before scale
-        self.trg_colors = trg_colors
+        self.vertices = [sm(scale, vertex) for vertex in vertices]
+        self.color = color
         self.triangles = []
-        for index, triangle in enumerate(triangles):
-            trg_verts = [self.vertices[index] for index in triangle]
-            if trg_colors is dict:
-                try:
-                    trg_col = self.trg_colors[index]
-                    self.triangles.append(Triangle(trg_verts, trg_col))
-                except KeyError:
-                    self.triangles.append(Triangle(trg_verts))
-            else:
-                trg_col = trg_colors
-                self.triangles.append(Triangle(trg_verts, trg_col))
+        for triangle in triangles:
+            self.triangles.append(Triangle(self, triangle, color))
 
         models.append(self)
 
-    def order_triangles(self):
+    def order_triangles(self, cam):
         self.triangles.sort(key=lambda trg: magn(va(cam.pos, va(self.center, trg.center), sign=-1)), reverse=True)
 
     def get_trg_center(self, triangle):
@@ -68,21 +60,26 @@ class Model:
     def move_obj_to(self, pos):
         self.center = pos
 
-    def rot_obj(self, angle, axix=(0, 0, 1)):
-        self.vertices = [rot_vec(vertex, angle, axix) for vertex in self.vertices]
+    def rot_obj(self, angle, axis=(0, 0, 1)):
+        self.vertices = [rot_vec(vertex, angle, axis) for vertex in self.vertices]
+        for trg_index in range(len(self.triangles)):
+            self.triangles[trg_index].center = rot_vec(self.triangles[trg_index].center, angle, axis)
+            self.triangles[trg_index].normal = rot_vec(self.triangles[trg_index].normal, angle, axis)
+            self.triangles[trg_index].color = self.triangles[trg_index].calc_brightness((255, 0, 0))
 
 
 class Triangle:
-    def __init__(self, vertices, color=(255, 255, 255)):
+    def __init__(self, parent, vertices, color=(255, 255, 255)):
         self.vertices = vertices
+        self.parent = parent
         self.center = self.get_center()
         self.normal = self.get_normal()
         self.color = self.calc_brightness(color)
 
     def get_center(self):
-        points_x = [self.vertices[i][0] for i in range(3)]
-        points_y = [self.vertices[i][1] for i in range(3)]
-        points_z = [self.vertices[i][2] for i in range(3)]
+        points_x = [self.parent.vertices[self.vertices[i]][0] for i in range(3)]
+        points_y = [self.parent.vertices[self.vertices[i]][1] for i in range(3)]
+        points_z = [self.parent.vertices[self.vertices[i]][2] for i in range(3)]
 
         center_x = (min(points_x) + (max(points_x) - min(points_x)) / 2)
         center_y = (min(points_y) + (max(points_y) - min(points_y)) / 2)
@@ -90,9 +87,8 @@ class Triangle:
         return center_x, center_y, center_z
 
     def get_normal(self):  # vertices are assumed to be defined in clockwise-order when looked at from outside
-        global i
-        v1 = va(self.vertices[1], self.vertices[0], sign=-1)
-        v2 = va(self.vertices[2], self.vertices[1], sign=-1)
+        v1 = va(self.parent.vertices[self.vertices[1]], self.parent.vertices[self.vertices[0]], sign=-1)
+        v2 = va(self.parent.vertices[self.vertices[2]], self.parent.vertices[self.vertices[1]], sign=-1)
         normal_vector = norm(np.cross(v1, v2))
         return normal_vector
 
@@ -109,8 +105,8 @@ class Camera:
         self.dir = (0, 0, 1)
         self.fov = 80  # horizontal field-of-view angle in degrees
         self.viewplane_dis = 50  # distance of the viewplane relative to the camera
-        self.speed = 5
-        self.rot_speed = .05
+        self.speed = 1000
+        self.rot_speed = .4
         self.mouse_control = mouse_control
 
     def display_verts(self, obj):
@@ -122,10 +118,11 @@ class Camera:
             drawpoint(self.project_to_screen(va(obj.center, obj.vertices[vertex_index])), color)
 
     def display_triangles(self, obj):
+        obj.order_triangles(self)
         for triangle in obj.triangles:
-            vert1 = self.project_to_screen(va(obj.center, triangle.vertices[0]))
-            vert2 = self.project_to_screen(va(obj.center, triangle.vertices[1]))
-            vert3 = self.project_to_screen(va(obj.center, triangle.vertices[2]))
+            vert1 = self.project_to_screen(va(obj.center, obj.vertices[triangle.vertices[0]]))
+            vert2 = self.project_to_screen(va(obj.center, obj.vertices[triangle.vertices[1]]))
+            vert3 = self.project_to_screen(va(obj.center, obj.vertices[triangle.vertices[2]]))
             drawtriangle(vert1, vert2, vert3, triangle.color)
 
     def project_to_screen(self, point):
@@ -165,7 +162,7 @@ class Camera:
             velocity[1] = -self.speed
 
         if self.mouse_control:
-            rotation = sm(0.005, move_mouse())
+            rotation = sm(self.rot_speed, move_mouse())
         else:
             # rotation left/right
             if key_list[pg.K_LEFT]:
@@ -177,6 +174,9 @@ class Camera:
                 rotation[0] = -self.rot_speed
             elif key_list[pg.K_UP]:
                 rotation[0] = self.rot_speed
+
+        velocity = sm(dtime, velocity)
+        rotation = sm(dtime, rotation)
 
         self.rot_cam(rotation)
         move_vec = va(sm(velocity[0], self.right), sm(velocity[1], self.up), sm(velocity[2], self.dir))
@@ -210,10 +210,10 @@ def convert_obj_file(path):
     triangles = []
     for line in lines_str:
         try:
-            if line[0] == "v":
+            if line[0:2] == "v ":
                 vertex = [float(number) for number in line[2::].split(" ")]
                 vertices.append(vertex)
-            if line[0] == "f":
+            if line[0:2] == "f ":
                 triangle = [int(index)-1 for index in line[2::].split(" ")]
                 triangles.append(triangle)
         except:
@@ -279,7 +279,7 @@ def drawtriangle(p1, p2, p3, color):
 
 light_source_dir = norm(light_source_dir)
 
-cam = Camera((0, 0, 100))
+cam = Camera((0, 0, 0))
 
 # Cube = Model((0, 0, 300),
 #              [(-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, 0.5, -0.5),
@@ -292,7 +292,8 @@ cam = Camera((0, 0, 100))
 # models.append(Cube))
 
 vertices, triangles = convert_obj_file("Models/VideoShip.obj")
-Plane = Model((0, -300, 1000), vertices, triangles, scale=100, trg_colors=(255, 0, 0))
+Plane = Model((0, -300, 1000), vertices, triangles, (255, 0, 0), 100)
+Plane.rot_obj(np.pi, (0, 1, 0))
 
 window_center = va(window_pos, sm(0.5, dims))  # center of the window in screen coordinates
 move_mouse()
@@ -313,10 +314,10 @@ while True:  # main loop in which everything happens
     cam.move_cam()
 
     for model in models:
-        model.order_triangles()
         cam.display_triangles(model)
         # cam.display_verts(model)
 
     pg.display.update()
-    print(1/-(stime - (stime := time.time())))  # show fps
+    dtime = -(stime - (stime := time.time()))
+    # print(1/dtime)  # show fps
     clock.tick(60)
