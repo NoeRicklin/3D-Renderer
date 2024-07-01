@@ -97,11 +97,24 @@ class Camera:
         self.right = (1, 0, 0)
         self.up = (0, 1, 0)
         self.dir = (0, 0, 1)
-        self.fov = 90  # horizontal field-of-view angle in degrees
+        self.fov = 110  # horizontal field-of-view angle in degrees
         self.viewplane_dis = 50  # distance of the viewplane relative to the camera
         self.speed = 1000
         self.rot_speed = .4
         self.mouse_control = mouse_control
+
+        # self.skybox = pg.image.load("Skyboxes/3x3_raster_image_flipped_upside_down1.jpg")
+        # self.skybox = pg.transform.scale_by(self.skybox, dims[0] / (self.fov/360 * self.skybox.get_width()/3))
+        # self.skybox_dims = (self.skybox.get_width(), self.skybox.get_height())
+        # self.skybox_cutout_width = self.fov/360 * self.skybox_dims[0]/3
+        # self.skybox_cutout_height = (self.fov * dims[1]/dims[0])/(360*3) * self.skybox_dims[1]
+
+    # def draw_skybox(self):
+    #     skybox_look_center = va((self.dir[0]*self.skybox_dims[0]/6, -self.dir[1]*self.skybox_dims[1]/6),
+    #     sm(0.5, self.skybox_dims))
+    #     skybox_cutout_rect_start = va(skybox_look_center, sm(0.5, dims), sign=-1)
+    #     screen.blit(self.skybox, (0, 0), (skybox_cutout_rect_start, dims))
+
 
     def display_models(self, objs):
         objs.sort(key=lambda instance: magn(va(instance.center, self.pos, sign=-1)), reverse=True)
@@ -200,16 +213,16 @@ class Camera:
         self.up = rot_vec(self.up, rotation[1], (0, 1, 0))
         self.dir = rot_vec(self.dir, rotation[1], (0, 1, 0))
 
-    def draw_cam(self):  # displays the camera and its FOV legs to show its direction (only used in 2D)
-        drawpoint(self.pos, "Yellow", 7)
-
-        fov_leg1_vec = rot_vec(self.dir, np.deg2rad(self.fov / 2))
-        fov_leg1_end = va(self.pos, sm(2000, fov_leg1_vec))
-        drawline(self.pos, fov_leg1_end, "Yellow")
-
-        fov_leg2_vec = rot_vec(self.dir, -np.deg2rad(self.fov / 2))
-        fov_leg2_end = va(self.pos, sm(2000, fov_leg2_vec))
-        drawline(self.pos, fov_leg2_end, "Yellow")
+    # def draw_cam(self):  # displays the camera and its FOV legs to show its direction (only used in 2D)
+    #     drawpoint(self.pos, "Yellow", 7)
+    #
+    #     fov_leg1_vec = rot_vec(self.dir, np.deg2rad(self.fov / 2))
+    #     fov_leg1_end = va(self.pos, sm(2000, fov_leg1_vec))
+    #     drawline(self.pos, fov_leg1_end, "Yellow")
+    #
+    #     fov_leg2_vec = rot_vec(self.dir, -np.deg2rad(self.fov / 2))
+    #     fov_leg2_end = va(self.pos, sm(2000, fov_leg2_vec))
+    #     drawline(self.pos, fov_leg2_end, "Yellow")
 
 
 def convert_obj_file(path):
@@ -303,7 +316,7 @@ Plane.rot_obj(np.pi, (0, 1, 0))
 # Plane2.rot_obj(np.pi + 0.5, (0, 1, 0))
 Plane3 = Model((120, -350, 950), plane[0], plane[1], (0, 255, 255), 10)
 Plane3.rot_obj(-.4, (0, 2 ** 0.5, 2 ** 0.5))
-# Plane4 = Model((0, -500, 200), plane[0], plane[1], (0, 0, 255), 10)
+# Plane4 = Model((0, 0, 20000), plane[0], plane[1], (0, 0, 255), 10)
 # Plane5 = Model((-300, 100, 400), plane[0], plane[1], (0, 255, 0), 90)
 
 window_center = va(window_pos, sm(0.5, dims))  # center of the window in screen coordinates
@@ -324,6 +337,7 @@ while True:  # main loop in which everything happens
     move_mouse()
     cam.move_cam()
 
+    # cam.draw_skybox()
     cam.display_models(models)
     pg.display.update()
     dtime = -(stime - (stime := time.time()))
