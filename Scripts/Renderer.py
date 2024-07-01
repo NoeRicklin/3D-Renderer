@@ -1,12 +1,12 @@
 import os
 from sys import exit
 import pygame as pg
-import numpy as np
 import time
 import pyautogui as pag
 import win32api
 import win32con
 
+from Utils import *
 """
 CONTROLS:
 Camera Movement: WASD
@@ -21,6 +21,7 @@ os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % window_pos
 mouse_pos = (0, 0)
 
 light_source_dir = (0, 200, -500)
+light_source_dir = norm(light_source_dir)
 environment_light_percent = 0.3  # amount of illumination in spots without direct lighting (value between 0 and 1)
 
 pg.init()
@@ -225,26 +226,6 @@ class Camera:
     #     drawline(self.pos, fov_leg2_end, "Yellow")
 
 
-def convert_obj_file(path):
-    file = open(path)
-    lines_str = file.read().split("\n")
-
-    vertices = []
-    triangles = []
-    for line in lines_str:
-        try:
-            if line[0:2] == "v ":
-                vertex = [float(number) for number in line[2::].split(" ")]
-                vertices.append(vertex)
-            if line[0:2] == "f ":
-                triangle = [int(index) - 1 for index in line[2::].split(" ")]
-                triangles.append(triangle)
-        except IndexError:
-            continue
-    file.close()
-    return vertices, triangles
-
-
 def move_mouse():
     global mouse_pos
     current_mouse_pos = pag.position()
@@ -254,40 +235,6 @@ def move_mouse():
                          int(window_center[1] / 1080 * 65535.0))
     mouse_pos = current_mouse_pos
     return delta_mouse
-
-
-def va(vector1, vector2, vector3=(0, 0, 0), sign=1):  # vector-addition (only use sign if adding 2 vectors)
-    summed_vector = [vector1[i] + sign * vector2[i] + vector3[i] for i in range(len(vector1))]
-    return summed_vector
-
-
-def sm(scalar, vector):  # scalar-multiplication of a vector
-    scaled_vector = [scalar * element for element in vector]
-    return scaled_vector
-
-
-def magn(vector):  # get the magnitude of a vector
-    magnitude = (np.sum([element ** 2 for element in vector])) ** 0.5
-    return magnitude
-
-
-def clamp(value, range):
-    clamped_value = max(range[0], min(range[1], value))
-    return clamped_value
-
-
-def norm(vector):  # get the normalized vector
-    norm_vec = sm(1 / magn(vector), vector)
-    return norm_vec
-
-
-def rot_vec(vector, angle, axis=(0, 1, 0)):  # rotate a vector around the axis, angle in radians
-    axis = norm(axis)
-    dot = np.dot(axis, vector)
-    cos = np.cos(angle)
-    sin = np.sin(angle)
-    new_vector = va(sm(dot * (1 - cos), axis), sm(cos, vector), sm(sin, np.cross(axis, vector)))
-    return new_vector
 
 
 def drawpoint(position, color="White", size=5):
@@ -305,11 +252,12 @@ def drawtriangle(p1, p2, p3, color):
         pg.draw.polygon(screen, color, (p1, p2, p3))
 
 
-light_source_dir = norm(light_source_dir)
+window_center = va(window_pos, sm(0.5, dims))  # center of the window in screen coordinates
+move_mouse()
 
 cam = Camera((0, -150, 300))
 
-plane = convert_obj_file("Models/VideoShip.obj")
+plane = convert_obj_file("../Models/VideoShip.obj")
 Plane = Model((0, -300, 1000), plane[0], plane[1], (255, 0, 0), 40)
 Plane.rot_obj(np.pi, (0, 1, 0))
 # Plane2 = Model((0, 300, 700), plane[0], plane[1], (255, 255, 255), 60)
@@ -318,9 +266,6 @@ Plane3 = Model((120, -350, 950), plane[0], plane[1], (0, 255, 255), 10)
 Plane3.rot_obj(-.4, (0, 2 ** 0.5, 2 ** 0.5))
 # Plane4 = Model((0, 0, 20000), plane[0], plane[1], (0, 0, 255), 10)
 # Plane5 = Model((-300, 100, 400), plane[0], plane[1], (0, 255, 0), 90)
-
-window_center = va(window_pos, sm(0.5, dims))  # center of the window in screen coordinates
-move_mouse()
 
 while True:  # main loop in which everything happens
     for event in pg.event.get():

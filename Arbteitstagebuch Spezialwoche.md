@@ -1,7 +1,0 @@
-| Datum     | Ziele                                                                                                                                                                  | Erreicht |
-|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
-| Mo - 1.7  | -Skript in einzelne kleine Skripte aufteilen<br/>-Kamera x-Achse max/min Winkel einführen<br/>-Kamera mit anderen Parametern funktionieren lassen<br/>-Skybox einfügen |          |
-| Di - 2.7  |                                                                                                                                                                        |          |
-| Mi - 3.7  |                                                                                                                                                                        |          |
-| Do - 4.7  |                                                                                                                                                                        |          |
-| Dr - 5.7  |                                                                                                                                                                        |          |
