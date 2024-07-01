@@ -11,6 +11,7 @@ import win32con
 CONTROLS:
 Camera Movement: WASD
 Camera Rotation: mouse
+Close:           Escape
 """
 
 # pygame settings
@@ -96,7 +97,7 @@ class Camera:
         self.right = (1, 0, 0)
         self.up = (0, 1, 0)
         self.dir = (0, 0, 1)
-        self.fov = 80  # horizontal field-of-view angle in degrees
+        self.fov = 90  # horizontal field-of-view angle in degrees
         self.viewplane_dis = 50  # distance of the viewplane relative to the camera
         self.speed = 1000
         self.rot_speed = .4
@@ -128,17 +129,25 @@ class Camera:
     def project_to_screen(self, point):
         # the location of the point, if you imagine the camera to be at the center of a coordinate system, always
         # pointing in the y direction (it calculates the l-combination of the point to the cam-dir and its normalvector)
+
         # converts the cameravectors into a list so that they can be used in the linear-combination algorhythm
         cam_vecs = np.array([[self.right[i], self.up[i], self.dir[i]] for i in range(3)])
         cam_space_point = np.linalg.solve(cam_vecs, va(point, self.pos, sign=-1))
 
-        cam_and_point_dot = np.dot(cam_space_point, (0, 0, 1))
+        cam_dir_and_point_dot = np.dot(cam_space_point, (0, 0, 1))
+        cam_dir_and_point_angle = np.arccos(cam_dir_and_point_dot/(magn(cam_space_point)))
 
-        if cam_and_point_dot > 0:  # checks if the point is visable
-            stretch_factor = self.viewplane_dis / cam_and_point_dot
-            cam_space_proj_point = sm(stretch_factor, cam_space_point)[:2]  # reduces the dimension of the points to 2D
-            cam_space_proj_point = (cam_space_proj_point[0], -1 * cam_space_proj_point[1])  # flips image (pygame-BS)
-            cam_space_proj_point = va(sm(9, cam_space_proj_point), sm(.5, dims))  # centers points on screen
+        if cam_dir_and_point_dot > 0:  # checks if the point is visable
+            stretch_factor = self.viewplane_dis / cam_dir_and_point_dot
+            cam_space_proj_point = sm(stretch_factor, cam_space_point[:2])  # reduces the dimension of the points to 2D
+
+            viewplane_width = 2*self.viewplane_dis*np.tan(np.deg2rad(self.fov/2))   # Formula explained in "Notizen"
+            viewplane_height = viewplane_width * (dims[1]/dims[0])
+
+            cam_space_proj_point = (dims[0]*(cam_space_proj_point[0]/viewplane_width), dims[1]*(cam_space_proj_point[1]/viewplane_height))
+
+            cam_space_proj_point = (cam_space_proj_point[0], -cam_space_proj_point[1])  # flips image (pygame-BS)
+            cam_space_proj_point = va(sm(1, cam_space_proj_point), sm(.5, dims))  # centers points on screen
             return cam_space_proj_point
 
     def move_cam(self):  # camera controller to move the camera around with the keyboard
@@ -184,7 +193,8 @@ class Camera:
 
     def rot_cam(self, rotation):
         # apply x-axis rotation
-        self.up, self.dir = rot_vec(self.up, rotation[0], self.right), rot_vec(self.dir, rotation[0], self.right)
+        if rot_vec(self.up, rotation[0], self.right)[1] >= 0:   # makes sure the camera doesn't become upside down
+            self.up, self.dir = rot_vec(self.up, rotation[0], self.right), rot_vec(self.dir, rotation[0], self.right)
         # apply y-axis rotation (rotation around the global y-axis so that it doesn't rotate around the z-axis
         self.right = rot_vec(self.right, rotation[1], (0, 1, 0))
         self.up = rot_vec(self.up, rotation[1], (0, 1, 0))
@@ -248,6 +258,11 @@ def magn(vector):  # get the magnitude of a vector
     return magnitude
 
 
+def clamp(value, range):
+    clamped_value = max(range[0], min(range[1], value))
+    return clamped_value
+
+
 def norm(vector):  # get the normalized vector
     norm_vec = sm(1 / magn(vector), vector)
     return norm_vec
@@ -279,14 +294,14 @@ def drawtriangle(p1, p2, p3, color):
 
 light_source_dir = norm(light_source_dir)
 
-cam = Camera((0, 0, 0))
+cam = Camera((0, -150, 300))
 
 plane = convert_obj_file("Models/VideoShip.obj")
-Plane = Model((0, -300, 1000), plane[0], plane[1], (255, 0, 0), 100)
+Plane = Model((0, -300, 1000), plane[0], plane[1], (255, 0, 0), 40)
 Plane.rot_obj(np.pi, (0, 1, 0))
 # Plane2 = Model((0, 300, 700), plane[0], plane[1], (255, 255, 255), 60)
 # Plane2.rot_obj(np.pi + 0.5, (0, 1, 0))
-Plane3 = Model((200, -500, 900), plane[0], plane[1], (0, 255, 255), 30)
+Plane3 = Model((120, -350, 950), plane[0], plane[1], (0, 255, 255), 10)
 Plane3.rot_obj(-.4, (0, 2 ** 0.5, 2 ** 0.5))
 # Plane4 = Model((0, -500, 200), plane[0], plane[1], (0, 0, 255), 10)
 # Plane5 = Model((-300, 100, 400), plane[0], plane[1], (0, 255, 0), 90)
@@ -312,4 +327,4 @@ while True:  # main loop in which everything happens
     cam.display_models(models)
     pg.display.update()
     dtime = -(stime - (stime := time.time()))
-    print(1 / dtime)  # show fps
+    # print(1 / dtime)  # show fps
