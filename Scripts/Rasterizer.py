@@ -20,12 +20,12 @@ window_pos = ((1920 - dims[0]) / 2, (1080 - dims[1]) / 2)
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % window_pos
 mouse_pos = (0, 0)
 
+pg.init()
+screen = pg.display.set_mode(dims)
+
 light_source_dir = (0, 200, -500)
 light_source_dir = norm(light_source_dir)
 environment_light_percent = 0.3  # amount of illumination in spots without direct lighting (value between 0 and 1)
-
-pg.init()
-screen = pg.display.set_mode(dims)
 
 stime = time.time()
 dtime = 0
@@ -116,7 +116,6 @@ class Camera:
     #     skybox_cutout_rect_start = va(skybox_look_center, sm(0.5, dims), sign=-1)
     #     screen.blit(self.skybox, (0, 0), (skybox_cutout_rect_start, dims))
 
-
     def display_models(self, objs):
         objs.sort(key=lambda instance: magn(va(instance.center, self.pos, sign=-1)), reverse=True)
         for obj in objs:
@@ -162,6 +161,7 @@ class Camera:
 
             cam_space_proj_point = (cam_space_proj_point[0], -cam_space_proj_point[1])  # flips image (pygame-BS)
             cam_space_proj_point = va(sm(1, cam_space_proj_point), sm(.5, dims))  # centers points on screen
+            cam_space_proj_point = (round(cam_space_proj_point[0]), round(cam_space_proj_point[1]))
             return cam_space_proj_point
 
     def move_cam(self):  # camera controller to move the camera around with the keyboard
@@ -249,23 +249,71 @@ def drawline(start, end, color="White", width=3):
 
 def drawtriangle(p1, p2, p3, color):
     if p1 and p2 and p3:
-        pg.draw.polygon(screen, color, (p1, p2, p3))
+        line_points = sorted(calc_line(p2, p1) + calc_line(p3, p1) + calc_line(p3, p2), key=lambda x: x[0])
+        if not line_points:
+            return
+        trg_length = line_points[-1][0] - line_points[0][0]
+        for row_index in range(trg_length):
+            row_points = []
+            first_row_point_index = 0
+            while line_points[first_row_point_index][0] != row_index + line_points[0][0]:
+                first_row_point_index += 1
+            last_row_point_index = first_row_point_index
+            while (point := line_points[last_row_point_index])[0] == row_index + line_points[0][0]:
+                row_points.append(point)
+                last_row_point_index += 1
+            row_height_range = min([i[1] for i in row_points]), max([i[1] for i in row_points])
+            for height in range(row_height_range[0], row_height_range[1]):
+                pixel_pos = (row_index + line_points[0][0], height)
+                screen.set_at(pixel_pos, color)
+
+
+def calc_line(start, end, color="White", size=1):
+    line_points = []
+
+    if start[0] == end[0]:
+        start, end = sorted([start, end], key=lambda x: x[1])
+        line_points = [(start[0], height) for height in range(start[1], end[1])]
+        return line_points
+
+    start, end = sorted([start, end], key=lambda x: x[0])
+    if end[0] - start[0] >= end[1] - start[1]:  # if slope <= 1
+        slope = (end[1] - start[1]) / (end[0] - start[0])
+        for pixel_index in range(end[0] - start[0]):
+            pixel_height = round(slope * pixel_index)
+
+            pixel_pos = (start[0] + pixel_index, start[1] + pixel_height)
+            # drawpoint(pixel_pos, size=1)
+            line_points.append(pixel_pos)
+    else:   # if slope > 1
+        start, end = sorted([start, end], key=lambda x: x[1])
+        slope = (start[0] - end[0]) / (end[1] - start[1])
+        for pixel_index in range(end[1]-start[1]):
+            pixel_height = round(slope * pixel_index)
+
+            pixel_pos = (start[0] - pixel_height, start[1] + pixel_index)
+            # drawpoint(pixel_pos, size=1)
+            line_points.append(pixel_pos)
+    return line_points
 
 
 window_center = va(window_pos, sm(0.5, dims))  # center of the window in screen coordinates
 move_mouse()
 
-cam = Camera((0, -150, 300))
+cam = Camera((0, 0, 0))
 
 plane = convert_obj_file("../Models/VideoShip.obj")
-Plane = Model((0, -300, 1000), plane[0], plane[1], (255, 0, 0), 40)
-Plane.rot_obj(np.pi, (0, 1, 0))
+# Plane1 = Model((0, -300, 1000), plane[0], plane[1], (255, 0, 0), 40)
+# Plane1.rot_obj(np.pi, (0, 1, 0))
 # Plane2 = Model((0, 300, 700), plane[0], plane[1], (255, 255, 255), 60)
 # Plane2.rot_obj(np.pi + 0.5, (0, 1, 0))
 Plane3 = Model((120, -350, 950), plane[0], plane[1], (0, 255, 255), 10)
 Plane3.rot_obj(-.4, (0, 2 ** 0.5, 2 ** 0.5))
 # Plane4 = Model((0, 0, 20000), plane[0], plane[1], (0, 0, 255), 10)
 # Plane5 = Model((-300, 100, 400), plane[0], plane[1], (0, 255, 0), 90)
+
+triangle = convert_obj_file("../Models/Triangle.obj")
+# Triangle_model = Model((0, 0, 500), triangle[0], triangle[1], scale=1)
 
 while True:  # main loop in which everything happens
     for event in pg.event.get():
