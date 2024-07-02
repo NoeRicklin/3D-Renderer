@@ -1,4 +1,3 @@
-* camera-speed shouldn't be dependent on fps
 * all triangles are rendered, even if the are hidden behind others
 * super laggy when part of a triangle is ofscreen
 * Order of Triangle rendering is sometimes incorrect
