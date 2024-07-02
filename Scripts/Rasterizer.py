@@ -104,7 +104,7 @@ class Camera:
         self.rot_speed = .008
         self.mouse_control = mouse_control
 
-        # self.skybox = pg.image.load("Skyboxes/3x3_raster_image_flipped_upside_down1.jpg")
+        # self.skybox = pg.image.load("../Skyboxes/3x3_raster_image_flipped_upside_down1.jpg")
         # self.skybox = pg.transform.scale_by(self.skybox, dims[0] / (self.fov/360 * self.skybox.get_width()/3))
         # self.skybox_dims = (self.skybox.get_width(), self.skybox.get_height())
         # self.skybox_cutout_width = self.fov/360 * self.skybox_dims[0]/3
@@ -162,7 +162,8 @@ class Camera:
             cam_space_proj_point = (cam_space_proj_point[0], -cam_space_proj_point[1])  # flips image (pygame-BS)
             cam_space_proj_point = va(sm(1, cam_space_proj_point), sm(.5, dims))  # centers points on screen
             cam_space_proj_point = (round(cam_space_proj_point[0]), round(cam_space_proj_point[1]))
-            return cam_space_proj_point
+            if 0 <= cam_space_proj_point[0] <= dims[0] and 0 <= cam_space_proj_point[1] <= dims[1]:
+                return cam_space_proj_point
 
     def move_cam(self):  # camera controller to move the camera around with the keyboard
         velocity = [0, 0, 0]
