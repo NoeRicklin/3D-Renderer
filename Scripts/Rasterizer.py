@@ -101,7 +101,7 @@ class Camera:
         self.fov = 110  # horizontal field-of-view angle in degrees
         self.viewplane_dis = 50  # distance of the viewplane relative to the camera
         self.speed = 1000
-        self.rot_speed = .4
+        self.rot_speed = .008
         self.mouse_control = mouse_control
 
         # self.skybox = pg.image.load("Skyboxes/3x3_raster_image_flipped_upside_down1.jpg")
@@ -199,7 +199,6 @@ class Camera:
                 rotation[0] = self.rot_speed
 
         velocity = sm(dtime, velocity)
-        rotation = sm(dtime, rotation)
 
         self.rot_cam(rotation)
         move_vec = va(sm(velocity[0], self.right), sm(velocity[1], self.up), sm(velocity[2], self.dir))
@@ -242,7 +241,7 @@ def drawpoint(position, color="White", size=5):
         pg.draw.circle(screen, color, position, size)
 
 
-def drawline(start, end, color="White", width=3):
+def drawline(start, end, color="White", width=1):
     if start and end:
         pg.draw.line(screen, color, start, end, width)
 
@@ -253,12 +252,9 @@ def drawtriangle(p1, p2, p3, color):
         if not line_points:
             return
         trg_length = line_points[-1][0] - line_points[0][0]
+        last_row_point_index = 0
         for row_index in range(trg_length):
             row_points = []
-            first_row_point_index = 0
-            while line_points[first_row_point_index][0] != row_index + line_points[0][0]:
-                first_row_point_index += 1
-            last_row_point_index = first_row_point_index
             while (point := line_points[last_row_point_index])[0] == row_index + line_points[0][0]:
                 row_points.append(point)
                 last_row_point_index += 1
@@ -268,7 +264,7 @@ def drawtriangle(p1, p2, p3, color):
                 screen.set_at(pixel_pos, color)
 
 
-def calc_line(start, end, color="White", size=1):
+def calc_line(start, end):
     line_points = []
 
     if start[0] == end[0]:
@@ -277,22 +273,20 @@ def calc_line(start, end, color="White", size=1):
         return line_points
 
     start, end = sorted([start, end], key=lambda x: x[0])
-    if end[0] - start[0] >= end[1] - start[1]:  # if slope <= 1
+    if abs(end[0] - start[0]) >= abs(end[1] - start[1]):  # if slope <= 1
         slope = (end[1] - start[1]) / (end[0] - start[0])
-        for pixel_index in range(end[0] - start[0]):
+        for pixel_index in range(end[0] - start[0] + 1):
             pixel_height = round(slope * pixel_index)
 
             pixel_pos = (start[0] + pixel_index, start[1] + pixel_height)
-            # drawpoint(pixel_pos, size=1)
             line_points.append(pixel_pos)
     else:   # if slope > 1
         start, end = sorted([start, end], key=lambda x: x[1])
         slope = (start[0] - end[0]) / (end[1] - start[1])
-        for pixel_index in range(end[1]-start[1]):
+        for pixel_index in range(end[1]-start[1] + 1):
             pixel_height = round(slope * pixel_index)
 
             pixel_pos = (start[0] - pixel_height, start[1] + pixel_index)
-            # drawpoint(pixel_pos, size=1)
             line_points.append(pixel_pos)
     return line_points
 
@@ -300,11 +294,11 @@ def calc_line(start, end, color="White", size=1):
 window_center = va(window_pos, sm(0.5, dims))  # center of the window in screen coordinates
 move_mouse()
 
-cam = Camera((0, 0, 0))
+cam = Camera([0, 0, 0])
 
 plane = convert_obj_file("../Models/VideoShip.obj")
-# Plane1 = Model((0, -300, 1000), plane[0], plane[1], (255, 0, 0), 40)
-# Plane1.rot_obj(np.pi, (0, 1, 0))
+Plane1 = Model((0, -300, 1000), plane[0], plane[1], (255, 0, 0), 40)
+Plane1.rot_obj(np.pi, (0, 1, 0))
 # Plane2 = Model((0, 300, 700), plane[0], plane[1], (255, 255, 255), 60)
 # Plane2.rot_obj(np.pi + 0.5, (0, 1, 0))
 Plane3 = Model((120, -350, 950), plane[0], plane[1], (0, 255, 255), 10)
@@ -335,3 +329,4 @@ while True:  # main loop in which everything happens
     pg.display.update()
     dtime = -(stime - (stime := time.time()))
     # print(1 / dtime)  # show fps
+

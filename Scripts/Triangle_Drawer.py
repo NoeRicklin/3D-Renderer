@@ -19,29 +19,29 @@ def calc_line(start, end, color="White", size=1):
     line_points = []
 
     start, end = sorted([start, end], key=lambda x: x[0])
-    if end[0] - start[0] >= end[1] - start[1]:  # if slope >= 1
+    if abs(end[0] - start[0]) >= abs(end[1] - start[1]):  # if slope >= 1
         slope = (end[1] - start[1]) / (end[0] - start[0])
-        for pixel_index in range(end[0] - start[0]):
+        for pixel_index in range(end[0] - start[0] + 1):
             pixel_height = round(slope * pixel_index)
 
             pixel_pos = (start[0] + pixel_index, start[1] + pixel_height)
-            # drawpoint(pixel_pos, size=1)
             line_points.append(pixel_pos)
+            # screen.set_at(pixel_pos, "White")
     else:   # if slope > 1
         start, end = sorted([start, end], key=lambda x: x[1])
         slope = (start[0] - end[0]) / (end[1] - start[1])
-        for pixel_index in range(end[1]-start[1]):
+        for pixel_index in range(end[1]-start[1] + 1):
             pixel_height = round(slope * pixel_index)
 
             pixel_pos = (start[0] - pixel_height, start[1] + pixel_index)
-            # drawpoint(pixel_pos, size=1)
             line_points.append(pixel_pos)
+            # screen.set_at(pixel_pos, "White")
     return line_points
 
 
 p1 = (500, 450)
 p2 = (900, 300)
-p3 = (1000, 550)
+p3 = (700, 600)
 
 
 while True:  # main loop in which everything happens
@@ -49,6 +49,7 @@ while True:  # main loop in which everything happens
         if event.type == pg.QUIT or pg.key.get_pressed()[pg.K_ESCAPE]:
             pg.quit()
             exit()
+
     if not pg.mouse.get_focused():
         pg.mouse.set_visible(True)
         continue
@@ -71,7 +72,16 @@ while True:  # main loop in which everything happens
         for height in range(row_height_range[0], row_height_range[1]):
             pixel_pos = (row_index + line_points[0][0], height)
             screen.set_at(pixel_pos, "White")
+        if row_height_range[1]-row_height_range[0] == 0:
+            print(row_index)
 
-    pg.draw.polygon(screen, "Yellow", (p1, p2, p3))
+    # calc_line(p3, p1)
+
+    # screen.set_at(p1, "Red")
+    # screen.set_at(p2, "Red")
+    # screen.set_at(p3, "Red")
+
+
+    # pg.draw.polygon(screen, "Yellow", (p1, p2, p3))
 
     pg.display.update()
