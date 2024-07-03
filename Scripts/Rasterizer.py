@@ -5,8 +5,8 @@ import time
 import pyautogui as pag
 import win32api
 import win32con
-
 from Utils import *
+
 """
 CONTROLS:
 Camera Movement: WASD
@@ -22,6 +22,8 @@ mouse_pos = (0, 0)
 
 pg.init()
 screen = pg.display.set_mode(dims)
+depth_map = [[[None, [0, 0, 0]] for y in range(dims[1])] for x in range(dims[0])]
+depth_map_active = []
 
 light_source_dir = (0, 200, -500)
 light_source_dir = norm(light_source_dir)
@@ -120,6 +122,9 @@ class Camera:
         objs.sort(key=lambda instance: magn(va(instance.center, self.pos, sign=-1)), reverse=True)
         for obj in objs:
             self.display_triangles(obj)
+        for pixel in depth_map_active:
+            screen.set_at(pixel, depth_map[pixel[0]][pixel[1]][1])
+            depth_map[pixel[0]][pixel[1]] = [None, [0, 0, 0]]
 
     def display_triangles(self, obj):
         obj.triangles.sort(key=lambda trg: magn(va(va(obj.center, trg.center), self.pos, sign=-1)), reverse=True)
@@ -146,13 +151,15 @@ class Camera:
         # converts the cameravectors into a list so that they can be used in the linear-combination algorhythm
         cam_vecs = np.array([[self.right[i], self.up[i], self.dir[i]] for i in range(3)])
         cam_space_point = np.linalg.solve(cam_vecs, va(point, self.pos, sign=-1))
+        depth = cam_space_point[2]
 
         cam_dir_and_point_dot = np.dot(cam_space_point, (0, 0, 1))
-        cam_dir_and_point_angle = np.arccos(cam_dir_and_point_dot/(magn(cam_space_point)))
+        # cam_dir_and_point_angle = np.arccos(cam_dir_and_point_dot/(magn(cam_space_point)))
 
         if cam_dir_and_point_dot > 0:  # checks if the point is visable
             stretch_factor = self.viewplane_dis / cam_dir_and_point_dot
-            cam_space_proj_point = sm(stretch_factor, cam_space_point[:2])  # reduces the dimension of the points to 2D
+            cam_space_proj_point = sm(stretch_factor, cam_space_point)
+            cam_space_proj_point = cam_space_proj_point[:2]     # reduces point to 2D
 
             viewplane_width = 2*self.viewplane_dis*np.tan(np.deg2rad(self.fov/2))   # Formula explained in "Notizen"
             viewplane_height = viewplane_width * (dims[1]/dims[0])
@@ -161,9 +168,9 @@ class Camera:
 
             cam_space_proj_point = (cam_space_proj_point[0], -cam_space_proj_point[1])  # flips image (pygame-BS)
             cam_space_proj_point = va(sm(1, cam_space_proj_point), sm(.5, dims))  # centers points on screen
-            cam_space_proj_point = (round(cam_space_proj_point[0]), round(cam_space_proj_point[1]))
+            cam_space_proj_point = [round(cam_space_proj_point[0]), round(cam_space_proj_point[1])]
             if 0 <= cam_space_proj_point[0] <= dims[0] and 0 <= cam_space_proj_point[1] <= dims[1]:
-                return cam_space_proj_point
+                return cam_space_proj_point + [depth]
 
     def move_cam(self):  # camera controller to move the camera around with the keyboard
         velocity = [0, 0, 0]
@@ -214,17 +221,6 @@ class Camera:
         self.up = rot_vec(self.up, rotation[1], (0, 1, 0))
         self.dir = rot_vec(self.dir, rotation[1], (0, 1, 0))
 
-    # def draw_cam(self):  # displays the camera and its FOV legs to show its direction (only used in 2D)
-    #     drawpoint(self.pos, "Yellow", 7)
-    #
-    #     fov_leg1_vec = rot_vec(self.dir, np.deg2rad(self.fov / 2))
-    #     fov_leg1_end = va(self.pos, sm(2000, fov_leg1_vec))
-    #     drawline(self.pos, fov_leg1_end, "Yellow")
-    #
-    #     fov_leg2_vec = rot_vec(self.dir, -np.deg2rad(self.fov / 2))
-    #     fov_leg2_end = va(self.pos, sm(2000, fov_leg2_vec))
-    #     drawline(self.pos, fov_leg2_end, "Yellow")
-
 
 def move_mouse():
     global mouse_pos
@@ -250,19 +246,25 @@ def drawline(start, end, color="White", width=1):
 def drawtriangle(p1, p2, p3, color):
     if p1 and p2 and p3:
         line_points = sorted(calc_line(p2, p1) + calc_line(p3, p1) + calc_line(p3, p2), key=lambda x: x[0])
-        if not line_points:
-            return
         trg_length = line_points[-1][0] - line_points[0][0]
         last_row_point_index = 0
+
         for row_index in range(trg_length):
             row_points = []
             while (point := line_points[last_row_point_index])[0] == row_index + line_points[0][0]:
                 row_points.append(point)
                 last_row_point_index += 1
-            row_height_range = min([i[1] for i in row_points]), max([i[1] for i in row_points])
+            row_points = sorted(row_points, key=lambda x: x[1])
+            row_height_range = row_points[0][1], row_points[-1][1]
             for height in range(row_height_range[0], row_height_range[1]):
                 pixel_pos = (row_index + line_points[0][0], height)
-                screen.set_at(pixel_pos, color)
+                current_depth = row_points[0][2] + (row_points[-1][2]-row_points[0][2])/(row_points[-1][1]-row_points[0][1])*height
+
+                if depth_map[pixel_pos[0]][pixel_pos[1]][0]:
+                    depth_map[pixel_pos[0]][pixel_pos[1]] = current_depth, color
+                else:
+                    depth_map[pixel_pos[0]][pixel_pos[1]] = current_depth, color
+                    depth_map_active.append(pixel_pos)
 
 
 def calc_line(start, end):
@@ -270,7 +272,7 @@ def calc_line(start, end):
 
     if start[0] == end[0]:
         start, end = sorted([start, end], key=lambda x: x[1])
-        line_points = [(start[0], height) for height in range(start[1], end[1])]
+        line_points = [(start[0], height, start[2]) for height in range(start[1], end[1])]
         return line_points
 
     start, end = sorted([start, end], key=lambda x: x[0])
@@ -279,16 +281,18 @@ def calc_line(start, end):
         for pixel_index in range(end[0] - start[0] + 1):
             pixel_height = round(slope * pixel_index)
 
-            pixel_pos = (start[0] + pixel_index, start[1] + pixel_height)
-            line_points.append(pixel_pos)
+            pixel_depth = start[2] + ((end[2] - start[2]) / (end[0] - start[0])) * pixel_index
+            pixel_pos = [start[0] + pixel_index, start[1] + pixel_height]
+            line_points.append(pixel_pos + [pixel_depth])
     else:   # if slope > 1
         start, end = sorted([start, end], key=lambda x: x[1])
         slope = (start[0] - end[0]) / (end[1] - start[1])
         for pixel_index in range(end[1]-start[1] + 1):
             pixel_height = round(slope * pixel_index)
 
-            pixel_pos = (start[0] - pixel_height, start[1] + pixel_index)
-            line_points.append(pixel_pos)
+            pixel_depth = start[2] + ((end[2] - start[2]) / (end[1] - start[1])) * pixel_index
+            pixel_pos = [start[0] - pixel_height, start[1] + pixel_index]
+            line_points.append(pixel_pos + [pixel_depth])
     return line_points
 
 
@@ -321,6 +325,7 @@ while True:  # main loop in which everything happens
     pg.mouse.set_visible(False)
 
     screen.fill("Black")
+    depth_map_active = []
 
     move_mouse()
     cam.move_cam()
@@ -329,5 +334,4 @@ while True:  # main loop in which everything happens
     cam.display_models(models)
     pg.display.update()
     dtime = -(stime - (stime := time.time()))
-    # print(1 / dtime)  # show fps
-
+    print(1 / dtime)  # show fps
