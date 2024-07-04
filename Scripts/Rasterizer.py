@@ -1,5 +1,6 @@
 import os
 from sys import exit
+
 import pygame as pg
 import time
 import pyautogui as pag
@@ -22,7 +23,8 @@ mouse_pos = (0, 0)
 
 pg.init()
 screen = pg.display.set_mode(dims)
-depth_map = [[[None, [0, 0, 0]] for y in range(dims[1])] for x in range(dims[0])]
+depth_map = [[None for _ in range(dims[1])] for _ in range(dims[0])]
+color_map = [[(0, 0, 0) for _ in range(dims[1])] for _ in range(dims[0])]
 depth_map_active = []
 
 light_source_dir = (0, 200, -500)
@@ -123,8 +125,10 @@ class Camera:
         for obj in objs:
             self.display_triangles(obj)
         for pixel in depth_map_active:
-            screen.set_at(pixel, depth_map[pixel[0]][pixel[1]][1])
-            depth_map[pixel[0]][pixel[1]] = [None, [0, 0, 0]]
+            screen.set_at(pixel, color_map[pixel[0]][pixel[1]])
+            depth_map[pixel[0]][pixel[1]] = None
+            color_map[pixel[0]][pixel[1]] = (0, 0, 0)
+        # pg.surfarray.blit_array(screen, np.array(color_map))
 
     def display_triangles(self, obj):
         # obj.triangles.sort(key=lambda trg: magn(va(va(obj.center, trg.center), self.pos, sign=-1)), reverse=True)
@@ -246,11 +250,13 @@ def drawline(start, end, color="White", width=1):
 
 def drawtriangle(p1, p2, p3, color):
     if p1 and p2 and p3:
+        if p1[0] == p2[0] == p3[0]:
+            return
         line_points = sorted(calc_line(p2, p1) + calc_line(p3, p1) + calc_line(p3, p2), key=lambda x: x[0])
-        trg_length = line_points[-1][0] - line_points[0][0]
+        trg_length = line_points[-1][0] - line_points[0][0] + 1
         last_row_point_index = 0
 
-        for row_index in range(trg_length):
+        for row_index in range(trg_length - 1):
             row_edge_points = []
             while (point := line_points[last_row_point_index])[0] == row_index + line_points[0][0]:
                 row_edge_points.append(point)
@@ -259,19 +265,21 @@ def drawtriangle(p1, p2, p3, color):
             row_height_range = row_edge_points[0][1], row_edge_points[-1][1]
             for height in range(row_height_range[0], row_height_range[1]):
                 pixel_pos = (row_index + line_points[0][0], height)
-                current_depth = row_edge_points[0][2] + (row_edge_points[-1][2]-row_edge_points[0][2])/(row_edge_points[-1][1]-row_edge_points[0][1])*(height-row_edge_points[0][1])
+                current_depth = (row_edge_points[0][2] + (row_edge_points[-1][2]-row_edge_points[0][2])/
+                                 (row_edge_points[-1][1]-row_edge_points[0][1])*(height-row_edge_points[0][1]))
 
-                if depth_map[pixel_pos[0]][pixel_pos[1]][0]:
-                    if current_depth < depth_map[pixel_pos[0]][pixel_pos[1]][0]:
-                        depth_map[pixel_pos[0]][pixel_pos[1]] = current_depth, color
+                if depth_map[pixel_pos[0]][pixel_pos[1]]:
+                    if current_depth < depth_map[pixel_pos[0]][pixel_pos[1]]:
+                        depth_map[pixel_pos[0]][pixel_pos[1]] = current_depth
+                        color_map[pixel_pos[0]][pixel_pos[1]] = color[:3]
                 else:
-                    depth_map[pixel_pos[0]][pixel_pos[1]] = current_depth, color
+                    depth_map[pixel_pos[0]][pixel_pos[1]] = current_depth
+                    color_map[pixel_pos[0]][pixel_pos[1]] = color[:3]
                     depth_map_active.append(pixel_pos)
 
 
 def calc_line(start, end):
     line_points = []
-
     if start[0] == end[0]:
         start, end = sorted([start, end], key=lambda x: x[1])
         line_points = [(start[0], height, start[2]) for height in range(start[1], end[1])]
@@ -339,6 +347,6 @@ while True:  # main loop in which everything happens
     pg.display.update()
     dtime = -(stime - (stime := time.time()))
     try:
-        print(1 / dtime)  # show fps
+        print(f"{round(1 / dtime,2)} FPS")  # show fps
     except ZeroDivisionError:
         print("n/a")
