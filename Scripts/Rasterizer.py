@@ -53,7 +53,7 @@ class Model:
     def translate_obj(self, translation):
         self.center = va(self.center, translation)
 
-    def rot_obj(self, angle, axis=(0, 0, 1)):
+    def rot_obj(self, angle, axis=(0, 0, 1)):   # angle in rad
         self.vertices = [rot_vec(vertex, angle, axis) for vertex in self.vertices]
         for triangle in self.triangles:
             triangle.center = rot_vec(triangle.center, angle, axis)
@@ -127,7 +127,7 @@ class Camera:
             depth_map[pixel[0]][pixel[1]] = [None, [0, 0, 0]]
 
     def display_triangles(self, obj):
-        obj.triangles.sort(key=lambda trg: magn(va(va(obj.center, trg.center), self.pos, sign=-1)), reverse=True)
+        # obj.triangles.sort(key=lambda trg: magn(va(va(obj.center, trg.center), self.pos, sign=-1)), reverse=True)
 
         for triangle in obj.triangles:
             if np.dot(va(va(obj.center, triangle.center), self.pos, sign=-1), triangle.normal) < 0:  # trg facing cam?
@@ -136,13 +136,13 @@ class Camera:
                 vert3 = self.project_to_screen(va(obj.center, obj.vertices[triangle.vertices[2]]))
                 drawtriangle(vert1, vert2, vert3, triangle.color)
 
-    def display_verts(self, obj):
-        for vertex_index in range(len(obj.vertices)):
-            try:
-                color = obj.vertex_colors[vertex_index]
-            except KeyError:
-                color = "White"
-            drawpoint(self.project_to_screen(va(obj.center, obj.vertices[vertex_index])), color)
+    # def display_verts(self, obj):
+    #     for vertex_index in range(len(obj.vertices)):
+    #         try:
+    #             color = obj.vertex_colors[vertex_index]
+    #         except KeyError:
+    #             color = "White"
+    #         drawpoint(self.project_to_screen(va(obj.center, obj.vertices[vertex_index])), color)
 
     def project_to_screen(self, point):
         # the location of the point, if you imagine the camera to be at the center of a coordinate system, always
@@ -151,12 +151,13 @@ class Camera:
         # converts the cameravectors into a list so that they can be used in the linear-combination algorhythm
         cam_vecs = np.array([[self.right[i], self.up[i], self.dir[i]] for i in range(3)])
         cam_space_point = np.linalg.solve(cam_vecs, va(point, self.pos, sign=-1))
-        depth = cam_space_point[2]
 
         cam_dir_and_point_dot = np.dot(cam_space_point, (0, 0, 1))
         # cam_dir_and_point_angle = np.arccos(cam_dir_and_point_dot/(magn(cam_space_point)))
 
         if cam_dir_and_point_dot > 0:  # checks if the point is visable
+            depth = cam_space_point[2]
+
             stretch_factor = self.viewplane_dis / cam_dir_and_point_dot
             cam_space_proj_point = sm(stretch_factor, cam_space_point)
             cam_space_proj_point = cam_space_proj_point[:2]     # reduces point to 2D
@@ -250,18 +251,19 @@ def drawtriangle(p1, p2, p3, color):
         last_row_point_index = 0
 
         for row_index in range(trg_length):
-            row_points = []
+            row_edge_points = []
             while (point := line_points[last_row_point_index])[0] == row_index + line_points[0][0]:
-                row_points.append(point)
+                row_edge_points.append(point)
                 last_row_point_index += 1
-            row_points = sorted(row_points, key=lambda x: x[1])
-            row_height_range = row_points[0][1], row_points[-1][1]
+            row_edge_points = sorted(row_edge_points, key=lambda x: x[1])
+            row_height_range = row_edge_points[0][1], row_edge_points[-1][1]
             for height in range(row_height_range[0], row_height_range[1]):
                 pixel_pos = (row_index + line_points[0][0], height)
-                current_depth = row_points[0][2] + (row_points[-1][2]-row_points[0][2])/(row_points[-1][1]-row_points[0][1])*height
+                current_depth = row_edge_points[0][2] + (row_edge_points[-1][2]-row_edge_points[0][2])/(row_edge_points[-1][1]-row_edge_points[0][1])*(height-row_edge_points[0][1])
 
                 if depth_map[pixel_pos[0]][pixel_pos[1]][0]:
-                    depth_map[pixel_pos[0]][pixel_pos[1]] = current_depth, color
+                    if current_depth < depth_map[pixel_pos[0]][pixel_pos[1]][0]:
+                        depth_map[pixel_pos[0]][pixel_pos[1]] = current_depth, color
                 else:
                     depth_map[pixel_pos[0]][pixel_pos[1]] = current_depth, color
                     depth_map_active.append(pixel_pos)
@@ -312,7 +314,9 @@ Plane3.rot_obj(-.4, (0, 2 ** 0.5, 2 ** 0.5))
 # Plane5 = Model((-300, 100, 400), plane[0], plane[1], (0, 255, 0), 90)
 
 triangle = convert_obj_file("../Models/Triangle.obj")
-# Triangle_model = Model((0, 0, 500), triangle[0], triangle[1], scale=1)
+# Triangle_model1 = Model((0, 0, 500), triangle[0], triangle[1], scale=1)
+# Triangle_model2 = Model((20, 0, 500), triangle[0], triangle[1], color=(255, 100, 0), scale=1)
+# Triangle_model2.rot_obj(np.deg2rad(90), (0, 1, 0))
 
 while True:  # main loop in which everything happens
     for event in pg.event.get():
@@ -334,4 +338,7 @@ while True:  # main loop in which everything happens
     cam.display_models(models)
     pg.display.update()
     dtime = -(stime - (stime := time.time()))
-    print(1 / dtime)  # show fps
+    try:
+        print(1 / dtime)  # show fps
+    except ZeroDivisionError:
+        print("n/a")
