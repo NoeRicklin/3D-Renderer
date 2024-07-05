@@ -14,7 +14,7 @@ models = []
 plane = convert_obj_file("../Models/VideoShip.obj")
 models.append(Model((0, -300, 1000), plane[0], plane[1], (255, 0, 0), 40, np.pi, (0, 1, 0)))
 # models.append(Model((0, -250, 1100), plane[0], plane[1], (255, 255, 255), 60))
-# models.append(Model((120, -350, 950), plane[0], plane[1], (0, 255, 255), 10))
+models.append(Model((120, -350, 950), plane[0], plane[1], (0, 255, 255), 10))
 # models.append(Model((0, 0, 200), plane[0], plane[1], (0, 0, 255), 10))
 # models.append(Model((-300, 100, 400), plane[0], plane[1], (0, 255, 0), 90))
 #
@@ -31,7 +31,7 @@ window_center = va(window_pos, sm(0.5, dims))  # center of the window in screen 
 mouse_pos = [0, 0]
 get_mouse_movement()
 
-fill_triangles = True
+fill_triangles = False
 
 pg.init()
 screen = pg.display.set_mode(dims)

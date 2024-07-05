@@ -79,13 +79,13 @@ def get_mouse_movement():
     return delta_mouse
 
 
-def drawpoint(position, color="White", size=5):
+def drawpoint(position, color="White", size=4):
     from Scene_Setup import screen
     if position:  # allows for no position to be given
         pg.draw.circle(screen, color, position, size)
 
 
-def drawline(start, end, color="White", width=1):
+def drawline(start, end, color="White", width=2):
     from Scene_Setup import screen
     if start and end:
         pg.draw.line(screen, color, start, end, width)

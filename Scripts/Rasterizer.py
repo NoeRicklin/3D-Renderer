@@ -28,9 +28,9 @@ def display_triangles(obj):
                     drawpoint(vert1[:2], triangle.max_color)
                     drawpoint(vert2[:2], triangle.max_color)
                     drawpoint(vert3[:2], triangle.max_color)
-                    drawline(vert1[:2], vert2[:2], triangle.max_color, width=3)
-                    drawline(vert1[:2], vert3[:2], triangle.max_color, width=3)
-                    drawline(vert2[:2], vert3[:2], triangle.max_color, width=3)
+                    drawline(vert1[:2], vert2[:2], triangle.max_color)
+                    drawline(vert1[:2], vert3[:2], triangle.max_color)
+                    drawline(vert2[:2], vert3[:2], triangle.max_color)
 
 
 def project_to_screen(point):
