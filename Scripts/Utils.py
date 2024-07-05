@@ -1,4 +1,10 @@
 import numpy as np
+import pygame as pg
+import pyautogui as pag
+import win32api
+import win32con
+from sys import exit
+import time
 
 
 def va(vector1, vector2, vector3=(0, 0, 0), sign=1):  # vector-addition (only use sign if adding 2 vectors)
@@ -16,8 +22,8 @@ def magn(vector):  # get the magnitude of a vector
     return magnitude
 
 
-def clamp(value, range):
-    clamped_value = max(range[0], min(range[1], value))
+def clamp(value, output_range):
+    clamped_value = max(output_range[0], min(output_range[1], value))
     return clamped_value
 
 
@@ -53,3 +59,43 @@ def convert_obj_file(path):
             continue
     file.close()
     return vertices, triangles
+
+
+def running_checks():
+    for event in pg.event.get():
+        if event.type == pg.QUIT or pg.key.get_pressed()[pg.K_ESCAPE]:
+            pg.quit()
+            exit()
+
+
+def get_mouse_movement():
+    import Scene_Setup
+    current_mouse_pos = pag.position()
+    delta_mouse = va(Scene_Setup.mouse_pos, current_mouse_pos, sign=-1)[::-1]
+    win32api.mouse_event(win32con.MOUSEEVENTF_MOVE | win32con.MOUSEEVENTF_ABSOLUTE,
+                         int(Scene_Setup.window_center[0] / 1920 * 65535.0),
+                         int(Scene_Setup.window_center[1] / 1080 * 65535.0))
+    Scene_Setup.mouse_pos = current_mouse_pos
+    return delta_mouse
+
+
+def drawpoint(position, color="White", size=5):
+    from Scene_Setup import screen
+    if position:  # allows for no position to be given
+        pg.draw.circle(screen, color, position, size)
+
+
+def drawline(start, end, color="White", width=1):
+    from Scene_Setup import screen
+    if start and end:
+        pg.draw.line(screen, color, start, end, width)
+
+
+def calc_fps():
+    import Scene_Setup
+    Scene_Setup.dtime = -(Scene_Setup.stime - (time.time()))
+    Scene_Setup.stime = time.time()
+    try:
+        return f"{round(1 / Scene_Setup.dtime, 2)} FPS"
+    except ZeroDivisionError:
+        return "n/a"

@@ -1,0 +1,43 @@
+import os
+from Utils import *
+from Camera import Camera
+from Models import Model
+
+# Camera Setup----------------------------------------------------------------------------------------------------------
+cam = Camera([0, 0, 0])
+light_source_dir = norm((0, 200, -500))
+environment_light_percent = 0.3  # amount of illumination in spots without direct lighting (value between 0 and 1)
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Objects Setup--------------------------------------------------------------------------------------------------------
+models = []
+plane = convert_obj_file("../Models/VideoShip.obj")
+models.append(Model((0, -300, 1000), plane[0], plane[1], (255, 0, 0), 40, np.pi, (0, 1, 0)))
+# models.append(Model((0, -250, 1100), plane[0], plane[1], (255, 255, 255), 60))
+# models.append(Model((120, -350, 950), plane[0], plane[1], (0, 255, 255), 10))
+# models.append(Model((0, 0, 200), plane[0], plane[1], (0, 0, 255), 10))
+# models.append(Model((-300, 100, 400), plane[0], plane[1], (0, 255, 0), 90))
+#
+# triangle = convert_obj_file("../Models/Triangle.obj")
+# models.append(Model((0, 0, 500), triangle[0], triangle[1], scale=1, rot_angle=1))
+# models.append(Model((20, 0, 500), triangle[0], triangle[1], color=(255, 100, 0), scale=1))
+# ----------------------------------------------------------------------------------------------------------------------
+
+# PyGame Setup----------------------------------------------------------------------------------------------------------
+dims = (1600, 900)
+window_pos = ((1920 - dims[0]) / 2, (1080 - dims[1]) / 2)
+os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % window_pos
+window_center = va(window_pos, sm(0.5, dims))  # center of the window in screen coordinates
+mouse_pos = [0, 0]
+get_mouse_movement()
+
+fill_triangles = True
+
+pg.init()
+screen = pg.display.set_mode(dims)
+pg.mouse.set_visible(False)
+
+stime = time.time()
+dtime = 0
+clock = pg.time.Clock()
+# ----------------------------------------------------------------------------------------------------------------------
