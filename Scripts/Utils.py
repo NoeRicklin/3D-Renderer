@@ -91,11 +91,12 @@ def drawline(start, end, color="White", width=1):
         pg.draw.line(screen, color, start, end, width)
 
 
-def calc_fps():
+def calc_fps(print_fps=True):
     import Scene_Setup
     Scene_Setup.dtime = -(Scene_Setup.stime - (time.time()))
     Scene_Setup.stime = time.time()
-    try:
-        return f"{round(1 / Scene_Setup.dtime, 2)} FPS"
-    except ZeroDivisionError:
-        return "n/a"
+    if print_fps:
+        try:
+            print(f"{round(1 / Scene_Setup.dtime, 2)} FPS")
+        except ZeroDivisionError:
+            print("n/a")

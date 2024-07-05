@@ -130,8 +130,8 @@ skybox_cutout_height = (cam.fov * dims[1] / dims[0]) / (360 * 3) * skybox_dims[1
 
 
 def draw_skybox():
-    skybox_look_center = va((cam.dir[0] * skybox_dims[0] / 6, -cam.dir[1] * skybox_dims[1] / 6),
-                            sm(0.5, skybox_dims))
+    z_angle = np.arccos(np.dot(cam.dir, (0, 0, 1))) / np.pi * np.sign(cam.dir[0])
+    skybox_look_center = va((z_angle * skybox_dims[0] / 6, -cam.dir[1] * skybox_dims[1] / 6), sm(0.5, skybox_dims))
     skybox_cutout_rect_start = va(skybox_look_center, sm(0.5, dims), sign=-1)
     screen.blit(skybox, (0, 0), (skybox_cutout_rect_start, dims))
 
@@ -147,4 +147,4 @@ while True:  # main loop in which everything happens
     display_models(models)
 
     pg.display.update()
-    print(calc_fps())
+    calc_fps(False)
