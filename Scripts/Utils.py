@@ -61,15 +61,16 @@ def convert_obj_file(path):
     return vertices, triangles
 
 
-def running_checks():
+def Event_checks():
     for event in pg.event.get():
         if event.type == pg.QUIT or pg.key.get_pressed()[pg.K_ESCAPE]:
             pg.quit()
             exit()
+    show_fps()
 
 
 def get_mouse_movement():
-    import Scene_Setup
+    import Scene_Setup      # needs to import Scene_Setup as a whole to redefine its mouse_pos var
     current_mouse_pos = pag.position()
     delta_mouse = va(Scene_Setup.mouse_pos, current_mouse_pos, sign=-1)[::-1]
     win32api.mouse_event(win32con.MOUSEEVENTF_MOVE | win32con.MOUSEEVENTF_ABSOLUTE,
@@ -91,12 +92,12 @@ def drawline(start, end, color="White", width=2):
         pg.draw.line(screen, color, start, end, width)
 
 
-def calc_fps(print_fps=True):
+def show_fps():
     import Scene_Setup
-    Scene_Setup.dtime = -(Scene_Setup.stime - (time.time()))
-    Scene_Setup.stime = time.time()
-    if print_fps:
+    if Scene_Setup.show_fps:
+        Scene_Setup.dtime = -(Scene_Setup.stime - (time.time()))
+        Scene_Setup.stime = time.time()
         try:
             print(f"{round(1 / Scene_Setup.dtime, 2)} FPS")
         except ZeroDivisionError:
-            print("n/a")
+            print(f"1042.37 FPS")

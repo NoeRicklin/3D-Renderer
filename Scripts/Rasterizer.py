@@ -137,7 +137,7 @@ def draw_skybox():
 
 
 while True:  # main loop in which everything happens
-    running_checks()
+    Event_checks()
 
     get_mouse_movement()
     cam.move_cam()
@@ -147,4 +147,3 @@ while True:  # main loop in which everything happens
     display_models(models)
 
     pg.display.update()
-    calc_fps(False)
