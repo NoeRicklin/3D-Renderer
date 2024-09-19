@@ -1,10 +1,13 @@
 from Scene_Setup import *
 
 depth_map = [[None for _ in range(dims[1])] for _ in range(dims[0])]
+depth_map_active = []
 color_map = [[(0, 0, 0) for _ in range(dims[1])] for _ in range(dims[0])]
 
 
 def display_models(objs):
+    global depth_map_active
+    depth_map_active = []
     objs.sort(key=lambda instance: magn(va(instance.center, cam.pos, sign=-1)), reverse=True)
     for obj in objs:
         display_triangles(obj)
@@ -22,7 +25,7 @@ def display_triangles(obj):
             vert2 = project_to_screen(va(obj.center, obj.vertices[triangle.vertices[1]]))
             vert3 = project_to_screen(va(obj.center, obj.vertices[triangle.vertices[2]]))
             if fill_triangles:
-                drawtriangle(vert1, vert2, vert3, triangle.color)
+                rasterize_triangle(vert1, vert2, vert3, triangle.color)
             else:
                 if vert1 and vert2 and vert3:
                     drawpoint(vert1[:2], triangle.max_color)
@@ -62,7 +65,7 @@ def project_to_screen(point):
             return cam_space_proj_point + [depth]
 
 
-def drawtriangle(p1, p2, p3, color):
+def rasterize_triangle(p1, p2, p3, color):
     if p1 and p2 and p3:
         if p1[0] == p2[0] == p3[0]:
             return
@@ -122,6 +125,7 @@ def calc_line_points(start, end):
     return line_points
 
 
+# sets up the skybox
 skybox = pg.image.load("../Skyboxes/3x3_raster_image_flipped_upside_down1.jpg")
 skybox = pg.transform.scale_by(skybox, dims[0] / (cam.fov / 360 * skybox.get_width() / 3))
 skybox_dims = (skybox.get_width(), skybox.get_height())
@@ -136,14 +140,6 @@ def draw_skybox():
     screen.blit(skybox, (0, 0), (skybox_cutout_rect_start, dims))
 
 
-while True:  # main loop in which everything happens
-    Event_checks()
-
-    get_mouse_movement()
-    cam.move_cam()
-
+def rasterizer():
     draw_skybox()
-    depth_map_active = []
     display_models(models)
-
-    pg.display.update()
