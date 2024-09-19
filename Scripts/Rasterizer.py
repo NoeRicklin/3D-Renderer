@@ -69,7 +69,7 @@ def rasterize_triangle(p1, p2, p3, color):
     if p1 and p2 and p3:
         if p1[0] == p2[0] == p3[0]:
             return
-        line_points = sorted(calc_line_points(p2, p1) + calc_line_points(p3, p1) + calc_line_points(p3, p2),
+        line_points = sorted(calc_linepoints(p2, p1) + calc_linepoints(p3, p1) + calc_linepoints(p3, p2),
                              key=lambda x: x[0])
         trg_length = line_points[-1][0] - line_points[0][0] + 1
         last_row_point_index = 0
@@ -97,7 +97,7 @@ def rasterize_triangle(p1, p2, p3, color):
                     depth_map_active.append(pixel_pos)
 
 
-def calc_line_points(start, end):
+def calc_linepoints(start, end):
     line_points = []
     if start[0] == end[0]:
         start, end = sorted([start, end], key=lambda x: x[1])

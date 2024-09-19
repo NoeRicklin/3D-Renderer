@@ -93,11 +93,11 @@ def drawline(start, end, color="White", width=2):
 
 
 def show_fps():
-    import Scene_Setup
-    if Scene_Setup.show_fps:
-        Scene_Setup.dtime = -(Scene_Setup.stime - (time.time()))
-        Scene_Setup.stime = time.time()
+    import Scene_Setup as ss
+    if ss.show_fps:
+        ss.dtime = -(ss.stime - (time.time()))
+        ss.stime = time.time()
         try:
-            print(f"{round(1 / Scene_Setup.dtime, 2)} FPS")
+            print(f"{round(1 / ss.dtime, 2)} FPS")
         except ZeroDivisionError:
             print(f"1042.37 FPS")

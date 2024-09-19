@@ -37,7 +37,7 @@ fill_triangles = True
 
 
 # Raytracer Settings----------------------------------------------------------------------------------------------------
-res = (10, 5)  # horizontal and vertical resolution (can't be bigger than the window)
+res = (160, 90)  # hor and ver resolution (only whole numbered fractions of window dimensions)
 # ----------------------------------------------------------------------------------------------------------------------
 
 

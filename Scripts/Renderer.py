@@ -1,5 +1,6 @@
+from Scene_Setup import *
 from Rasterizer import rasterizer
-from Raytracer import *
+from Raytracer import raytracer
 
 while True:  # main loop in which everything happens
     Event_checks()
