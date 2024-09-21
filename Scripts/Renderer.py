@@ -3,7 +3,8 @@ from Rasterizer import rasterizer
 from Raytracer import raytracer
 
 while True:  # main loop in which everything happens
-    Event_checks()
+    event_checks()
+    print_fps()
 
     get_mouse_movement()
     cam.move_cam()

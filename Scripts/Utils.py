@@ -7,6 +7,11 @@ from sys import exit
 import time
 
 
+stime = time.time()
+dtime = 0
+clock = pg.time.Clock()
+
+
 def va(vector1, vector2, vector3=(0, 0, 0), sign=1):  # vector-addition (only use sign if adding 2 vectors)
     summed_vector = [vector1[i] + sign * vector2[i] + vector3[i] for i in range(len(vector1))]
     return summed_vector
@@ -61,12 +66,11 @@ def convert_obj_file(path):
     return vertices, triangles
 
 
-def Event_checks():
+def event_checks():
     for event in pg.event.get():
         if event.type == pg.QUIT or pg.key.get_pressed()[pg.K_ESCAPE]:
             pg.quit()
             exit()
-    show_fps()
 
 
 def get_mouse_movement():
@@ -92,12 +96,13 @@ def drawline(start, end, color="White", width=2):
         pg.draw.line(screen, color, start, end, width)
 
 
-def show_fps():
+def print_fps():
     import Scene_Setup as ss
-    if ss.show_fps:
-        ss.dtime = -(ss.stime - (time.time()))
-        ss.stime = time.time()
+    global dtime, stime
+    if ss.print_fps:
+        dtime = -(stime - (time.time()))
+        stime = time.time()
         try:
-            print(f"{round(1 / ss.dtime, 2)} FPS")
+            print(f"{round(1 / dtime, 2)} FPS")
         except ZeroDivisionError:
             print(f"1042.37 FPS")

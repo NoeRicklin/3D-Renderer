@@ -48,9 +48,8 @@ class Camera:
             elif key_list[pg.K_UP]:
                 rotation[0] = self.rot_speed
 
-        from Scene_Setup import dtime
+        from Utils import dtime
         velocity = sm(dtime, velocity)
-
         self.rot_cam(rotation)
         move_vec = va(sm(velocity[0], self.right), sm(velocity[1], self.up), sm(velocity[2], self.dir))
         self.pos = va(self.pos, move_vec)
@@ -63,3 +62,12 @@ class Camera:
         self.right = rot_vec(self.right, rotation[1], (0, 1, 0))
         self.up = rot_vec(self.up, rotation[1], (0, 1, 0))
         self.dir = rot_vec(self.dir, rotation[1], (0, 1, 0))
+    
+    def vp_rect(self, dims):    # vp stands for viewplane
+        vp_width = 2 * self.viewplane_dis * np.tan(np.deg2rad(self.fov / 2))
+        vp_height = vp_width / dims[0] * dims[1]
+        vp_top_left = (self.pos[0] + self.dir[0] * self.viewplane_dis - self.right[0] * vp_width / 2,
+                       self.pos[1] + self.dir[1] * self.viewplane_dis - self.up[1] * vp_height / 2,
+                       self.pos[2] + self.dir[2] * self.viewplane_dis - self.right[2] * vp_width / 2)
+
+        return vp_top_left, vp_width, vp_height

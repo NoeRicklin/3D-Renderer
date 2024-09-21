@@ -33,11 +33,13 @@ models.append(Model((0, -250, 1100), plane[0], plane[1], (255, 255, 255), 60))
 
 # Rasterizer Settings---------------------------------------------------------------------------------------------------
 fill_triangles = True
+skybox = pg.image.load("../Skyboxes/3x3_raster_image_flipped_upside_down1.jpg")
 # ----------------------------------------------------------------------------------------------------------------------
 
 
 # Raytracer Settings----------------------------------------------------------------------------------------------------
 res = (160, 90)  # hor and ver resolution (only whole numbered fractions of window dimensions)
+rays = []
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -52,10 +54,6 @@ get_mouse_movement()
 pg.init()
 screen = pg.display.set_mode(dims)
 pg.mouse.set_visible(False)
-
-stime = time.time()
-dtime = 0
-clock = pg.time.Clock()
 
 show_fps = True
 # ----------------------------------------------------------------------------------------------------------------------

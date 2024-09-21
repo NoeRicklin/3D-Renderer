@@ -42,7 +42,6 @@ def project_to_screen(point):
     cam_space_point = np.linalg.solve(cam_vecs, va(point, cam.pos, sign=-1))
 
     cam_dir_and_point_dot = np.dot(cam_space_point, (0, 0, 1))
-    # cam_dir_and_point_angle = np.arccos(cam_dir_and_point_dot/(magn(cam_space_point)))
 
     if cam_dir_and_point_dot > 0:  # checks if the point is visable
         depth = cam_space_point[2]
@@ -126,7 +125,6 @@ def calc_linepoints(start, end):
 
 
 # sets up the skybox
-skybox = pg.image.load("../Skyboxes/3x3_raster_image_flipped_upside_down1.jpg")
 skybox = pg.transform.scale_by(skybox, dims[0] / (cam.fov / 360 * skybox.get_width() / 3))
 skybox_dims = (skybox.get_width(), skybox.get_height())
 skybox_cutout_width = cam.fov / 360 * skybox_dims[0] / 3
