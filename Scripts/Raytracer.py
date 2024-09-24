@@ -7,6 +7,10 @@ pixel_dims = int(dims[0] / res[0]), int(dims[1] / res[1])  # dims of the screena
 vp_pixel_dims = cam.vp_rect(dims)[1] / res[0], cam.vp_rect(dims)[2] / res[1]    # dims of the pixelarea on the viewplane
 
 
+def ray_box_hit(ray, obj):
+    pass
+
+
 def setup_rays():
     for x in range(res[0]):
         for y in range(res[1]):

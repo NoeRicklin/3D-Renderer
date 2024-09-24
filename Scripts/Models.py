@@ -12,6 +12,8 @@ class Model:
 
         self.rot_obj(rot_angle, rot_axis)
 
+        # self.aabb = self.boundingbox()
+
     def move_obj_to(self, pos):
         self.center = pos
 
@@ -24,6 +26,18 @@ class Model:
             triangle.center = rot_vec(triangle.center, angle, axis)
             triangle.normal = rot_vec(triangle.normal, angle, axis)
             triangle.color = triangle.calc_brightness(triangle.max_color)
+
+    # def boundingbox(self):   # returns the 2 extreme corners of the axis aligned bounding box (AABB)
+    #     min_x, max_x, min_y, max_y, min_z, max_z = 999999, -999999, 999999, -999999, 999999, -999999
+    #     for triangle in self.triangles:
+    #         for vertex in triangle.vertices:
+    #             if vertex[0] < min_x: min_x = vertex[0]
+    #             if vertex[0] > max_x: max_x = vertex[0]
+    #             if vertex[1] < min_y: min_y = vertex[1]
+    #             if vertex[1] > max_y: max_y = vertex[1]
+    #             if vertex[2] < min_z: min_z = vertex[2]
+    #             if vertex[2] > max_z: max_z = vertex[2]
+    #     return (min_x, min_y, min_z), (max_x, max_y, max_z)
 
 
 class Triangle:
