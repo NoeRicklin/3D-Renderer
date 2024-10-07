@@ -18,22 +18,21 @@ def display_models(objs):
 
 
 def display_triangles(obj):
-    for triangle in obj.triangles:
-        if np.dot(va(va(obj.center, triangle.center), cam.pos, sign=-1),
-                  triangle.normal) < 0:  # trg facing cam?
-            vert1 = project_to_screen(va(obj.center, obj.vertices[triangle.vertices[0]]))
-            vert2 = project_to_screen(va(obj.center, obj.vertices[triangle.vertices[1]]))
-            vert3 = project_to_screen(va(obj.center, obj.vertices[triangle.vertices[2]]))
+    for trg in obj.triangles:
+        if np.dot(va(va(obj.center, trg.center), cam.pos, sign=-1), trg.normal) < 0:  # trg facing cam?
+            vert1 = project_to_screen(va(obj.center, obj.vertices[trg.vertices[0]]))
+            vert2 = project_to_screen(va(obj.center, obj.vertices[trg.vertices[1]]))
+            vert3 = project_to_screen(va(obj.center, obj.vertices[trg.vertices[2]]))
             if fill_triangles:
-                rasterize_triangle(vert1, vert2, vert3, triangle.color)
+                rasterize_triangle(vert1, vert2, vert3, trg.color)
             else:
                 if vert1 and vert2 and vert3:
-                    drawpoint(vert1[:2], triangle.max_color)
-                    drawpoint(vert2[:2], triangle.max_color)
-                    drawpoint(vert3[:2], triangle.max_color)
-                    drawline(vert1[:2], vert2[:2], triangle.max_color)
-                    drawline(vert1[:2], vert3[:2], triangle.max_color)
-                    drawline(vert2[:2], vert3[:2], triangle.max_color)
+                    drawpoint(vert1[:2], trg.max_color)
+                    drawpoint(vert2[:2], trg.max_color)
+                    drawpoint(vert3[:2], trg.max_color)
+                    drawline(vert1[:2], vert2[:2], trg.max_color)
+                    drawline(vert1[:2], vert3[:2], trg.max_color)
+                    drawline(vert2[:2], vert3[:2], trg.max_color)
 
 
 def project_to_screen(point):

@@ -67,7 +67,7 @@ class Camera:
         vp_width = 2 * self.viewplane_dis * np.tan(np.deg2rad(self.fov / 2))
         vp_height = vp_width / dims[0] * dims[1]
         vp_top_left = (self.pos[0] + self.dir[0] * self.viewplane_dis - self.right[0] * vp_width / 2,
-                       self.pos[1] + self.dir[1] * self.viewplane_dis - self.up[1] * vp_height / 2,
+                       self.pos[1] + self.dir[1] * self.viewplane_dis + self.up[1] * vp_height / 2,
                        self.pos[2] + self.dir[2] * self.viewplane_dis - self.right[2] * vp_width / 2)
 
         return vp_top_left, vp_width, vp_height
