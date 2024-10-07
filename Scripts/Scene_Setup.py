@@ -17,13 +17,13 @@ triangle = convert_obj_file("../Models/Triangle.obj")
 utah_teapot = convert_obj_file("../Models/Utah Teapot.obj")
 mountains = convert_obj_file("../Models/mountains.obj")
 
-# models.append(Model((0, -300, 1000), plane[0], plane[1], (255, 0, 0), 40, np.pi, (0, 1, 0)))
+models.append(Model((0, -300, 1000), plane[0], plane[1], (255, 0, 0), 40, np.pi, (0, 1, 0)))
 # models.append(Model((0, -250, 1100), plane[0], plane[1], (255, 255, 255), 60))
 # models.append(Model((120, -350, 950), plane[0], plane[1], (0, 255, 255), 10))
 # models.append(Model((0, 0, 200), plane[0], plane[1], (0, 0, 255), 10))
 # models.append(Model((-300, 100, 400), plane[0], plane[1], (0, 255, 0), 90))
 
-models.append(Model((0, 0, 500), triangle[0], triangle[1], scale=1, rot_angle=0))
+# models.append(Model((0, 0, 500), triangle[0], triangle[1], scale=1, rot_angle=0))
 # models.append(Model((20, 0, 500), triangle[0], triangle[1], color=(255, 100, 0), scale=1))
 
 # models.append(Model((0, -300, 1000), utah_teapot[0], utah_teapot[1], scale=100))

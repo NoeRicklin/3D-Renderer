@@ -53,15 +53,14 @@ def convert_obj_file(path):
     vertices = []
     triangles = []
     for line in lines_str:
-        try:
-            if line[0:2] == "v ":
-                vertex = [float(number) for number in line[2::].split(" ")]
-                vertices.append(vertex)
-            if line[0:2] == "f ":
-                triangle = [int(index) - 1 for index in line[2::].split(" ")]
-                triangles.append(triangle)
-        except IndexError:
+        if len(line) < 2:
             continue
+        if line[0:2] == "v ":
+            vertex = [float(number) for number in line[2::].split(" ")]
+            vertices.append(vertex)
+        if line[0:2] == "f ":
+            triangle = [int(index) - 1 for index in line[2::].split(" ")]
+            triangles.append(triangle)
     file.close()
     return vertices, triangles
 
