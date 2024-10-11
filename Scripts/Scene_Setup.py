@@ -19,14 +19,14 @@ mountains = convert_obj_file("../Models/mountains.obj")
 sphere = convert_obj_file("../Models/sphere.obj")
 sphere_high_poly = convert_obj_file("../Models/sphere_high_poly.obj")
 
-# models.append(Model(plane, (0, -300, 1000), (255, 0, 0), 40, np.pi, (0, 1, 0)))
+models.append(Model(plane, (0, 0, 200), (255, 0, 0), 20, np.pi, (0.2, 1, -0.5)))
 # models.append(Model(plane, (0, -250, 1100), (255, 255, 255), 60))
 # models.append(Model(plane, (120, -350, 950), (0, 255, 255), 10))
 # models.append(Model(plane, (0, 0, 200), (0, 0, 255), 10))
 # models.append(Model(plane, (-300, 100, 400), (0, 255, 0), 90))
 
-models.append(Model(triangle, (0, 0, 400), (60, 180, 25), 1.5, 1))
-models.append(Model(triangle, (0, -100, 500), (170, 145, 255), 4))
+# models.append(Model(triangle, (0, 0, 400), (60, 180, 25), 1.5, 1))
+# models.append(Model(triangle, (0, -100, 500), (170, 145, 255), 4, 0.2, (1, 0, 0)))
 
 # models.append(Model(sphere, (0, 0, 500), (0, 255, 240), 70))
 # models.append(Model(sphere_high_poly, (0, 0, 500), (0, 255, 240), 70))
@@ -44,7 +44,7 @@ skybox = pg.image.load("../Skyboxes/3x3_raster_image_flipped_upside_down1.jpg")
 # Raytracer Settings----------------------------------------------------------------------------------------------------
 res = (160, 90)  # hor and ver resolution (only whole numbers)
 rays = []
-highlight_strength = 500
+highlight_strength = 35
 scatter_strength = 1
 # ----------------------------------------------------------------------------------------------------------------------
 

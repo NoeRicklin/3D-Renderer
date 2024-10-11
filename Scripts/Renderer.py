@@ -9,8 +9,6 @@ while True:  # main loop in which everything happens
     get_mouse_movement()
     cam.move_cam()
 
-    raytracer()
-
-    # models[0].rot_obj(0.1)
+    rasterizer()
 
     pg.display.update()

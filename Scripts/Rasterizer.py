@@ -1,38 +1,33 @@
 from Scene_Setup import *
+from Skybox import draw_skybox
 
 depth_map = [[None for _ in range(dims[1])] for _ in range(dims[0])]
 depth_map_active = []
 color_map = [[(0, 0, 0) for _ in range(dims[1])] for _ in range(dims[0])]
 
 
-def display_models(objs):
-    global depth_map_active
-    depth_map_active = []
-    objs.sort(key=lambda instance: magn(va(instance.center, cam.pos, sign=-1)), reverse=True)
-    for obj in objs:
+def display_models():
+    for obj in models:
         display_triangles(obj)
-    for pixel in depth_map_active:
-        screen.set_at(pixel, color_map[pixel[0]][pixel[1]])
-        depth_map[pixel[0]][pixel[1]] = None
-        color_map[pixel[0]][pixel[1]] = (0, 0, 0)
 
 
 def display_triangles(obj):
     for trg in obj.triangles:
-        if np.dot(va(va(obj.center, trg.center), cam.pos, sign=-1), trg.normal) < 0:  # trg facing cam?
-            vert1 = project_to_screen(va(obj.center, obj.vertices[trg.vertices[0]]))
-            vert2 = project_to_screen(va(obj.center, obj.vertices[trg.vertices[1]]))
-            vert3 = project_to_screen(va(obj.center, obj.vertices[trg.vertices[2]]))
-            if fill_triangles:
-                rasterize_triangle(vert1, vert2, vert3, trg.color)
-            else:
-                if vert1 and vert2 and vert3:
-                    drawpoint(vert1[:2], trg.max_color)
-                    drawpoint(vert2[:2], trg.max_color)
-                    drawpoint(vert3[:2], trg.max_color)
-                    drawline(vert1[:2], vert2[:2], trg.max_color)
-                    drawline(vert1[:2], vert3[:2], trg.max_color)
-                    drawline(vert2[:2], vert3[:2], trg.max_color)
+        if np.dot(va(va(obj.center, trg.center), cam.pos, sign=-1), trg.normal) >= 0:  # trg facing cam?
+            continue
+        vert1 = project_to_screen(va(obj.center, obj.vertices[trg.vertices[0]]))
+        vert2 = project_to_screen(va(obj.center, obj.vertices[trg.vertices[1]]))
+        vert3 = project_to_screen(va(obj.center, obj.vertices[trg.vertices[2]]))
+        if fill_triangles:
+            rasterize_triangle(vert1, vert2, vert3, trg.color)
+            continue
+        if vert1 and vert2 and vert3:
+            drawpoint(vert1[:2], trg.max_color)
+            drawpoint(vert2[:2], trg.max_color)
+            drawpoint(vert3[:2], trg.max_color)
+            drawline(vert1[:2], vert2[:2], trg.max_color)
+            drawline(vert1[:2], vert3[:2], trg.max_color)
+            drawline(vert2[:2], vert3[:2], trg.max_color)
 
 
 def project_to_screen(point):
@@ -54,9 +49,8 @@ def project_to_screen(point):
         viewplane_height = viewplane_width * (dims[1] / dims[0])
 
         cam_space_proj_point = (dims[0] * (cam_space_proj_point[0] / viewplane_width),
-                                dims[1] * (cam_space_proj_point[1] / viewplane_height))
+                                -dims[1] * (cam_space_proj_point[1] / viewplane_height))
 
-        cam_space_proj_point = (cam_space_proj_point[0], -cam_space_proj_point[1])  # flips image (pygame-BS)
         cam_space_proj_point = va(sm(1, cam_space_proj_point), sm(.5, dims))  # centers points on screen
         cam_space_proj_point = [round(cam_space_proj_point[0]), round(cam_space_proj_point[1])]
         if 0 <= cam_space_proj_point[0] <= dims[0] and 0 <= cam_space_proj_point[1] <= dims[1]:
@@ -64,35 +58,34 @@ def project_to_screen(point):
 
 
 def rasterize_triangle(p1, p2, p3, color):
-    if p1 and p2 and p3:
-        if p1[0] == p2[0] == p3[0]:
-            return
-        line_points = sorted(calc_linepoints(p2, p1) + calc_linepoints(p3, p1) + calc_linepoints(p3, p2),
-                             key=lambda x: x[0])
-        trg_length = line_points[-1][0] - line_points[0][0] + 1
-        last_row_point_index = 0
+    if not (p1 and p2 and p3) or p1[0] == p2[0] == p3[0]:
+        return
+    line_points = calc_linepoints(p2, p1) + calc_linepoints(p3, p1) + calc_linepoints(p3, p2)
+    line_points = sorted(line_points, key=lambda _: _[0])
+    trg_length = line_points[-1][0] - line_points[0][0] + 1
+    last_column_point_index = 0
 
-        for row_index in range(trg_length - 1):
-            row_edge_points = []
-            while (point := line_points[last_row_point_index])[0] == row_index + line_points[0][0]:
-                row_edge_points.append(point)
-                last_row_point_index += 1
-            row_edge_points = sorted(row_edge_points, key=lambda x: x[1])
-            row_height_range = row_edge_points[0][1], row_edge_points[-1][1]
-            for height in range(row_height_range[0], row_height_range[1]):
-                pixel_pos = (row_index + line_points[0][0], height)
-                current_depth = (row_edge_points[0][2] + (row_edge_points[-1][2] - row_edge_points[0][2]) /
-                                 (row_edge_points[-1][1] - row_edge_points[0][1]) * (
-                                         height - row_edge_points[0][1]))
+    for column_index in range(trg_length - 1):
+        column_edge_points = []
+        while (point := line_points[last_column_point_index])[0] == column_index + line_points[0][0]:
+            column_edge_points.append(point)
+            last_column_point_index += 1
+        column_edge_points = sorted(column_edge_points, key=lambda _: _[1])
+        column_height_range = column_edge_points[0][1], column_edge_points[-1][1]
+        for height in range(column_height_range[0], column_height_range[1]):
+            pixel_pos = (column_index + line_points[0][0], height)
+            a = column_edge_points[0]
+            b = column_edge_points[-1]
+            current_depth = (a[2] + (b[2] - a[2]) / (b[1] - a[1]) * (height - a[1]))
 
-                if depth_map[pixel_pos[0]][pixel_pos[1]]:
-                    if current_depth < depth_map[pixel_pos[0]][pixel_pos[1]]:
-                        depth_map[pixel_pos[0]][pixel_pos[1]] = current_depth
-                        color_map[pixel_pos[0]][pixel_pos[1]] = color[:3]
-                else:
+            if min_depth := depth_map[pixel_pos[0]][pixel_pos[1]]:
+                if current_depth < float(str(min_depth)):   # type conversions to avoid error warning
                     depth_map[pixel_pos[0]][pixel_pos[1]] = current_depth
                     color_map[pixel_pos[0]][pixel_pos[1]] = color[:3]
-                    depth_map_active.append(pixel_pos)
+            else:
+                depth_map[pixel_pos[0]][pixel_pos[1]] = current_depth
+                color_map[pixel_pos[0]][pixel_pos[1]] = color[:3]
+                depth_map_active.append(pixel_pos)
 
 
 def calc_linepoints(start, end):
@@ -123,20 +116,16 @@ def calc_linepoints(start, end):
     return line_points
 
 
-# sets up the skybox
-skybox = pg.transform.scale_by(skybox, dims[0] / (cam.fov / 360 * skybox.get_width() / 3))
-skybox_dims = (skybox.get_width(), skybox.get_height())
-skybox_cutout_width = cam.fov / 360 * skybox_dims[0] / 3
-skybox_cutout_height = (cam.fov * dims[1] / dims[0]) / (360 * 3) * skybox_dims[1]
-
-
-def draw_skybox():
-    z_angle = np.arccos(np.dot(cam.dir, (0, 0, 1))) / np.pi * np.sign(cam.dir[0])
-    skybox_look_center = va((z_angle * skybox_dims[0] / 6, -cam.dir[1] * skybox_dims[1] / 6), sm(0.5, skybox_dims))
-    skybox_cutout_rect_start = va(skybox_look_center, sm(0.5, dims), sign=-1)
-    screen.blit(skybox, (0, 0), (skybox_cutout_rect_start, dims))
+def set_image():
+    global depth_map_active
+    for pixel in depth_map_active:
+        screen.set_at(pixel, color_map[pixel[0]][pixel[1]])
+        depth_map[pixel[0]][pixel[1]] = None
+        color_map[pixel[0]][pixel[1]] = (0, 0, 0)
+    depth_map_active = []
 
 
 def rasterizer():
     draw_skybox()
-    display_models(models)
+    display_models()
+    set_image()

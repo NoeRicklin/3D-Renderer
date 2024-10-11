@@ -1,7 +1,9 @@
 from Scene_Setup import *
 from Ray import *
+from Skybox import draw_skybox
 
 image = np.zeros((dims[0], dims[1], 3), dtype=int)  # image to be drawn on the screen each frame
+active_rays = []
 
 pixel_dims = int(dims[0] / res[0]), int(dims[1] / res[1])  # dims of the screenarea drawn by a single ray
 vp_pxl_dims = cam.vp_rect(dims)[1] / res[0], cam.vp_rect(dims)[2] / res[1]    # dims of the pixelarea on the viewplane
@@ -20,42 +22,31 @@ def setup_rays():
 
             ray = PxlRay(ray_cam_pos, ray_pos, ray_cam_dir, ray_dir, ray_screen_pos, ray_color)
             rays.append(ray)
-    # x, y = 82, 47
-    # ray_cam_xy = va(sm(x * vp_pxl_dims[0], cam.right), sm(-y * vp_pxl_dims[1], cam.up))
-    # ray_cam_pos = va(cam.vp_rect(dims)[0], ray_cam_xy)
-    # ray_pos = va(cam.pos, ray_cam_pos)
-    # ray_cam_dir = norm(va(ray_pos, cam.pos, sign=-1))
-    # ray_dir = ray_cam_dir
-    # ray_screen_pos = (x * pixel_dims[0], y * pixel_dims[1])
-    # ray_color = pg.Color(int(x / res[0] * 255), int(y / res[1] * 255), 0)[:3]
-    #
-    # ray = PxlRay(ray_cam_pos, ray_pos, ray_cam_dir, ray_dir, ray_screen_pos, ray_color)
-    # rays.append(ray)
 
 
 def draw_rays():
     for ray in rays:
         set_ray_color(ray)
 
+    for ray in active_rays:     # draws the colors of the rays on the pixels
         x_start, x_end = ray.screen_pos[0], ray.screen_pos[0] + pixel_dims[0]
         y_start, y_end = ray.screen_pos[1], ray.screen_pos[1] + pixel_dims[1]
         image[x_start:x_end, y_start:y_end] = ray.color
 
     image_surf = pg.surfarray.make_surface(image)
+    image_surf.set_colorkey((0, 0, 0))
     screen.blit(image_surf, (0, 0))
 
 
 def set_ray_color(ray):
-    # if ray.screen_pos == (82*pixel_dims[0], 47*pixel_dims[1]):
-    #     ray.color = (255, 0, 0)
-    #     return
     hit_point, hit_norm, trg_color = find_ray_collision(ray)
     if not hit_point:
-        if (look_sun := dot(ray.dir, light_source_dir)) > 0.999:
+        if (look_sun := dot(ray.dir, light_source_dir)) > 0.999:    # draws the sun when the ray faces its direction
             ray.color = sm(look_sun**1000, (255, 255, 140))
         return
     brightness = calc_brightness(ray, hit_point, hit_norm)
     ray.color = sm(brightness, trg_color)
+    active_rays.append(ray)
 
 
 def find_ray_collision(ray):
@@ -226,6 +217,9 @@ def draw_aabb():
 
 
 def set_rays():     # prepares the rays for the new frame
+    global image, active_rays
+    image = np.zeros((dims[0], dims[1], 3), dtype=int)
+    active_rays = []
     for ray in rays:
         ray.pos = va(cam.pos, ray.cam_pos)
         ray.dir = va(sm(ray.cam_dir[0], cam.right), sm(ray.cam_dir[1], cam.up), sm(ray.cam_dir[2], cam.dir))
@@ -236,6 +230,7 @@ setup_rays()
 
 
 def raytracer():
+    draw_skybox()
     set_rays()
     draw_rays()
-    # draw_aabb()
+    draw_aabb()
