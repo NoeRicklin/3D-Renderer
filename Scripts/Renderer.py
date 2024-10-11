@@ -11,4 +11,6 @@ while True:  # main loop in which everything happens
 
     raytracer()
 
+    # models[0].rot_obj(0.1)
+
     pg.display.update()

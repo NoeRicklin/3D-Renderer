@@ -2,13 +2,11 @@ from Utils import *
 
 
 class Model:
-    def __init__(self, center, vertices, triangles, color=(255, 255, 255), scale=1, rot_angle=0, rot_axis=(0, 1, 0)):
+    def __init__(self, verts_and_trgs, center, color=(255, 255, 255), scale=1, rot_angle=0, rot_axis=(0, 1, 0)):
         self.center = center
-        self.vertices = [sm(scale, vertex) for vertex in vertices]
+        self.vertices = [sm(scale, vertex) for vertex in verts_and_trgs[0]]
         self.color = color
-        self.triangles = []
-        for triangle in triangles:
-            self.triangles.append(Triangle(self, triangle, color))
+        self.triangles = [Triangle(self, triangle, color) for triangle in verts_and_trgs[1]]
 
         self.rot_obj(rot_angle, rot_axis)
 
@@ -28,15 +26,13 @@ class Model:
 
     def boundingbox(self):   # returns the 2 extreme corners of the axis aligned bounding box (AABB)
         min_x, max_x, min_y, max_y, min_z, max_z = 999999, -999999, 999999, -999999, 999999, -999999
-        for triangle in self.triangles:
-            for vertex_index in triangle.vertices:
-                vertex = self.vertices[vertex_index]
-                if vertex[0] < min_x: min_x = vertex[0]
-                if vertex[0] > max_x: max_x = vertex[0]
-                if vertex[1] < min_y: min_y = vertex[1]
-                if vertex[1] > max_y: max_y = vertex[1]
-                if vertex[2] < min_z: min_z = vertex[2]
-                if vertex[2] > max_z: max_z = vertex[2]
+        for vertex in self.vertices:
+            if vertex[0] < min_x: min_x = vertex[0]
+            if vertex[0] > max_x: max_x = vertex[0]
+            if vertex[1] < min_y: min_y = vertex[1]
+            if vertex[1] > max_y: max_y = vertex[1]
+            if vertex[2] < min_z: min_z = vertex[2]
+            if vertex[2] > max_z: max_z = vertex[2]
         return (min_x, max_x), (min_y, max_y), (min_z, max_z)
 
 

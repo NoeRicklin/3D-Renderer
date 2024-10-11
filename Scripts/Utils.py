@@ -22,6 +22,12 @@ def sm(scalar, vector):  # scalar-multiplication of a vector
     return scaled_vector
 
 
+def dot(vector1, vector2):  # dot product of two vectors
+    component_multiplied = [vector1[i] * vector2[i] for i in range(len(vector1))]
+    dot_product = sum(component_multiplied)
+    return dot_product
+
+
 def magn(vector):  # get the magnitude of a vector
     magnitude = (np.sum([element ** 2 for element in vector])) ** 0.5
     return magnitude
@@ -59,7 +65,7 @@ def convert_obj_file(path):
             vertex = [float(number) for number in line[2::].split(" ")]
             vertices.append(vertex)
         if line[0:2] == "f ":
-            triangle = [int(index) - 1 for index in line[2::].split(" ")]
+            triangle = [int(index.split("/")[0]) - 1 for index in line[2::].split(" ")[:3]]
             triangles.append(triangle)
     file.close()
     return vertices, triangles
@@ -98,7 +104,7 @@ def drawline(start, end, color="White", width=2):
 def print_fps():
     import Scene_Setup as ss
     global dtime, stime
-    if ss.print_fps:
+    if ss.show_fps:
         dtime = -(stime - (time.time()))
         stime = time.time()
         try:

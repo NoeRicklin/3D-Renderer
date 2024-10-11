@@ -16,18 +16,22 @@ plane = convert_obj_file("../Models/VideoShip.obj")
 triangle = convert_obj_file("../Models/Triangle.obj")
 utah_teapot = convert_obj_file("../Models/Utah Teapot.obj")
 mountains = convert_obj_file("../Models/mountains.obj")
+sphere = convert_obj_file("../Models/sphere.obj")
+sphere_high_poly = convert_obj_file("../Models/sphere_high_poly.obj")
 
-models.append(Model((0, -300, 1000), plane[0], plane[1], (255, 0, 0), 40, np.pi, (0, 1, 0)))
-# models.append(Model((0, -250, 1100), plane[0], plane[1], (255, 255, 255), 60))
-# models.append(Model((120, -350, 950), plane[0], plane[1], (0, 255, 255), 10))
-# models.append(Model((0, 0, 200), plane[0], plane[1], (0, 0, 255), 10))
-# models.append(Model((-300, 100, 400), plane[0], plane[1], (0, 255, 0), 90))
+# models.append(Model(plane, (0, -300, 1000), (255, 0, 0), 40, np.pi, (0, 1, 0)))
+# models.append(Model(plane, (0, -250, 1100), (255, 255, 255), 60))
+# models.append(Model(plane, (120, -350, 950), (0, 255, 255), 10))
+# models.append(Model(plane, (0, 0, 200), (0, 0, 255), 10))
+# models.append(Model(plane, (-300, 100, 400), (0, 255, 0), 90))
 
-# models.append(Model((0, 0, 500), triangle[0], triangle[1], scale=1, rot_angle=0))
-# models.append(Model((20, 0, 500), triangle[0], triangle[1], color=(255, 100, 0), scale=1))
+models.append(Model(triangle, (0, 0, 400), (60, 180, 25), 1.5, 1))
+models.append(Model(triangle, (0, -100, 500), (170, 145, 255), 4))
 
-# models.append(Model((0, -300, 1000), utah_teapot[0], utah_teapot[1], scale=100))
-# models.append(Model((0, -5000, 7000), mountains[0], mountains[1], scale=100))
+# models.append(Model(sphere, (0, 0, 500), (0, 255, 240), 70))
+# models.append(Model(sphere_high_poly, (0, 0, 500), (0, 255, 240), 70))
+
+# models.append(Model(utah_teapot, (0, -300, 1000), scale=100))
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -38,8 +42,10 @@ skybox = pg.image.load("../Skyboxes/3x3_raster_image_flipped_upside_down1.jpg")
 
 
 # Raytracer Settings----------------------------------------------------------------------------------------------------
-res = (160, 90)  # hor and ver resolution (only whole numbered fractions of window dimensions)
+res = (160, 90)  # hor and ver resolution (only whole numbers)
 rays = []
+highlight_strength = 500
+scatter_strength = 1
 # ----------------------------------------------------------------------------------------------------------------------
 
 
