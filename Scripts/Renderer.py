@@ -1,6 +1,7 @@
 from Scene_Setup import *
 from Rasterizer import rasterizer
 from Raytracer import raytracer
+from Skybox import draw_skybox
 
 while True:  # main loop in which everything happens
     event_checks()
@@ -9,6 +10,9 @@ while True:  # main loop in which everything happens
     get_mouse_movement()
     cam.move_cam()
 
-    rasterizer()
+    screen.fill("Black")
+    draw_skybox()
+
+    raytracer()
 
     pg.display.update()

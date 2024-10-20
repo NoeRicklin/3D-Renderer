@@ -1,11 +1,9 @@
 import numpy as np
 import pygame as pg
 import pyautogui as pag
-import win32api
-import win32con
+import win32api, win32con
 from sys import exit
 import time
-
 
 stime = time.time()
 dtime = 0
@@ -79,7 +77,7 @@ def event_checks():
 
 
 def get_mouse_movement():
-    import Scene_Setup      # needs to import Scene_Setup as a whole to redefine its mouse_pos var
+    import Scene_Setup  # needs to import Scene_Setup as a whole to redefine its mouse_pos var
     current_mouse_pos = pag.position()
     delta_mouse = va(Scene_Setup.mouse_pos, current_mouse_pos, sign=-1)[::-1]
     win32api.mouse_event(win32con.MOUSEEVENTF_MOVE | win32con.MOUSEEVENTF_ABSOLUTE,

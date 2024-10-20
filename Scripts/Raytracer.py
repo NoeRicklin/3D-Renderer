@@ -1,12 +1,13 @@
 from Scene_Setup import *
 from Ray import *
-from Skybox import draw_skybox
 
 image = np.zeros((dims[0], dims[1], 3), dtype=int)  # image to be drawn on the screen each frame
+
+rays = []
 active_rays = []
 
 pixel_dims = int(dims[0] / res[0]), int(dims[1] / res[1])  # dims of the screenarea drawn by a single ray
-vp_pxl_dims = cam.vp_rect(dims)[1] / res[0], cam.vp_rect(dims)[2] / res[1]    # dims of the pixelarea on the viewplane
+vp_pxl_dims = cam.vp_rect(dims)[1] / res[0], cam.vp_rect(dims)[2] / res[1]  # dims of the pixelarea on the viewplane
 
 
 def setup_rays():
@@ -28,7 +29,7 @@ def draw_rays():
     for ray in rays:
         set_ray_color(ray)
 
-    for ray in active_rays:     # draws the colors of the rays on the pixels
+    for ray in active_rays:  # draws the colors of the rays on the pixels
         x_start, x_end = ray.screen_pos[0], ray.screen_pos[0] + pixel_dims[0]
         y_start, y_end = ray.screen_pos[1], ray.screen_pos[1] + pixel_dims[1]
         image[x_start:x_end, y_start:y_end] = ray.color
@@ -41,8 +42,9 @@ def draw_rays():
 def set_ray_color(ray):
     hit_point, hit_norm, trg_color = find_ray_collision(ray)
     if not hit_point:
-        if (look_sun := dot(ray.dir, light_source_dir)) > 0.999:    # draws the sun when the ray faces its direction
-            ray.color = sm(look_sun**1000, (255, 255, 140))
+        if (look_sun := dot(ray.dir, light_source_dir)) > 0.999:  # draws the sun when the ray faces its direction
+            ray.color = sm(look_sun ** 1000, (255, 255, 140))
+            active_rays.append(ray)
         return
     brightness = calc_brightness(ray, hit_point, hit_norm)
     ray.color = sm(brightness, trg_color)
@@ -80,44 +82,44 @@ def get_ray_facing_sides(ray, obj):
     faces = []
     aabb = obj.aabb
     if ray.dir[0] > 0:
-        x_face = aabb[0][0], aabb[1], aabb[2], 0    # das Schlusselement gibt die Richtung der Seite an
+        x_face = aabb[0][0], aabb[1], aabb[2], 0  # das Schlusselement gibt die Richtung der Seite an
         faces.append(x_face)
     if ray.dir[0] < 0:
-        x_face = aabb[0][1], aabb[1], aabb[2], 0    # das Schlusselement gibt die Richtung der Seite an
+        x_face = aabb[0][1], aabb[1], aabb[2], 0  # das Schlusselement gibt die Richtung der Seite an
         faces.append(x_face)
     if ray.dir[1] > 0:
-        y_face = aabb[0], aabb[1][0], aabb[2], 1    # das Schlusselement gibt die Richtung der Seite an
+        y_face = aabb[0], aabb[1][0], aabb[2], 1  # das Schlusselement gibt die Richtung der Seite an
         faces.append(y_face)
     if ray.dir[1] < 0:
-        y_face = aabb[0], aabb[1][1], aabb[2], 1    # das Schlusselement gibt die Richtung der Seite an
+        y_face = aabb[0], aabb[1][1], aabb[2], 1  # das Schlusselement gibt die Richtung der Seite an
         faces.append(y_face)
     if ray.dir[2] > 0:
-        z_face = aabb[0], aabb[1], aabb[2][0], 2    # das Schlusselement gibt die Richtung der Seite an
+        z_face = aabb[0], aabb[1], aabb[2][0], 2  # das Schlusselement gibt die Richtung der Seite an
         faces.append(z_face)
     if ray.dir[2] < 0:
-        z_face = aabb[0], aabb[1], aabb[2][1], 2    # das Schlusselement gibt die Richtung der Seite an
+        z_face = aabb[0], aabb[1], aabb[2][1], 2  # das Schlusselement gibt die Richtung der Seite an
         faces.append(z_face)
     return faces
 
 
 def ray_rect_hit(ray, rect, obj_center):
     # scales ray.dir to land on the plane on which the rectangle lies
-    ray_to_obj = va(obj_center, ray.pos, sign=-1)   # relative position of the ray_start compared to the object
-    ray_scalar = (ray_to_obj[rect[3]] + rect[rect[3]]) / ray.dir[rect[3]]
-    if ray_scalar < 0:    # clips of objects too close to the camera
+    ray2obj = va(obj_center, ray.pos, sign=-1)  # relative position of the ray_start compared to the object
+    ray_scalar = (ray2obj[rect[3]] + rect[rect[3]]) / ray.dir[rect[3]]
+    if ray_scalar < 0:  # clips of objects too close to the camera
         return False
     scaled_dir = sm(ray_scalar, ray.dir)
-    scaled_dir_to_obj = va(scaled_dir, ray_to_obj, sign=-1)
+    scaled_dir2obj = va(scaled_dir, ray2obj, sign=-1)
 
     # checks if the ray landed inside the rectangle
     if rect[3] == 0:
-        if (rect[1][0] <= scaled_dir_to_obj[1] <= rect[1][1]) and (rect[2][0] <= scaled_dir_to_obj[2] <= rect[2][1]):
+        if (rect[1][0] <= scaled_dir2obj[1] <= rect[1][1]) and (rect[2][0] <= scaled_dir2obj[2] <= rect[2][1]):
             return True
     elif rect[3] == 1:
-        if (rect[0][0] <= scaled_dir_to_obj[0] <= rect[0][1]) and (rect[2][0] <= scaled_dir_to_obj[2] <= rect[2][1]):
+        if (rect[0][0] <= scaled_dir2obj[0] <= rect[0][1]) and (rect[2][0] <= scaled_dir2obj[2] <= rect[2][1]):
             return True
     elif rect[3] == 2:
-        if (rect[0][0] <= scaled_dir_to_obj[0] <= rect[0][1]) and (rect[1][0] <= scaled_dir_to_obj[1] <= rect[1][1]):
+        if (rect[0][0] <= scaled_dir2obj[0] <= rect[0][1]) and (rect[1][0] <= scaled_dir2obj[1] <= rect[1][1]):
             return True
 
 
@@ -127,7 +129,7 @@ def ray_obj_hit(ray, obj):
     color = None
 
     for trg in obj.triangles:
-        if dot(ray.dir, trg.normal) > 0 - 0.00001:   # checks if the triangle is facing the camera
+        if dot(ray.dir, trg.normal) > 0 - 0.00001:  # checks if the triangle is facing the camera
             continue
         if trg_hit := ray_trg_hit(ray, obj, trg):
             if not nearest_hit_point or nearest_hit_point[1] > trg_hit[1]:
@@ -138,9 +140,7 @@ def ray_obj_hit(ray, obj):
 
 
 def ray_trg_hit(ray, obj, trg):
-    trg_v0 = obj.vertices[trg.vertices[0]]
-    trg_v1 = obj.vertices[trg.vertices[1]]
-    trg_v2 = obj.vertices[trg.vertices[2]]
+    trg_v0, trg_v1, trg_v2 = [trg.lcl_vert(i) for i in range(3)]
 
     # scales ray.dir to land on the plane on which the triangle lies and checks if the ray landed inside the triangle
     trg_vec1 = va(trg_v1, trg_v0, sign=-1)
@@ -170,15 +170,15 @@ def calc_brightness(ray, hit_point, surf_norm):
 
 
 def check_open_light(hit_point):
-    ray_to_light = BounceRay(hit_point, light_source_dir)
-    return not find_ray_collision(ray_to_light)[0]
+    ray2light = BounceRay(hit_point, light_source_dir)
+    return not find_ray_collision(ray2light)[0]
 
 
 def calc_directly_lit_prob(ray, surf_norm):
     reflected_ray_dir = refl_ray(ray, surf_norm)
-    reflect_to_light_prob = dot(reflected_ray_dir, light_source_dir) ** highlight_strength
-    scatter_amount = dot(surf_norm, light_source_dir) ** (1/scatter_strength)
-    lit_prob = (reflect_to_light_prob + scatter_amount) / 2
+    reflect2light_prob = dot(reflected_ray_dir, light_source_dir) ** highlight_strength
+    scatter_amount = dot(surf_norm, light_source_dir) ** (1 / scatter_strength)
+    lit_prob = (reflect2light_prob + scatter_amount) / 2
     return lit_prob
 
 
@@ -197,7 +197,7 @@ def check_point_in_aabb(point, obj_center, aabb):
 
 
 def draw_aabb():
-    from Rasterizer import project_to_screen
+    from Rasterizer import project2screen
     for obj in models:
         obj_verts = []
         for vert_ind in range(8):
@@ -207,7 +207,7 @@ def draw_aabb():
         obj_screen_verts = []
         for vert in obj_verts:
             try:
-                screen_vert = project_to_screen(va(obj.center, vert))[:2]
+                screen_vert = project2screen(va(obj.center, vert))[:2]
             except TypeError:
                 screen_vert = (0, 0)
             obj_screen_verts.append(screen_vert)
@@ -216,7 +216,7 @@ def draw_aabb():
             drawline(obj_screen_verts[int(vert_ind_oct[-2])], obj_screen_verts[int(vert_ind_oct[-1])])
 
 
-def set_rays():     # prepares the rays for the new frame
+def set_rays():  # prepares the rays for the new frame
     global image, active_rays
     image = np.zeros((dims[0], dims[1], 3), dtype=int)
     active_rays = []
@@ -230,7 +230,6 @@ setup_rays()
 
 
 def raytracer():
-    draw_skybox()
     set_rays()
     draw_rays()
-    draw_aabb()
+    # draw_aabb()   # Für debugging

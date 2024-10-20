@@ -2,13 +2,15 @@ from Utils import *
 
 
 class Camera:
-    def __init__(self, pos, mouse_control=True):
+    def __init__(self, pos, dims, mouse_control=True):
         self.pos = pos
         self.right = (1, 0, 0)
         self.up = (0, 1, 0)
         self.dir = (0, 0, 1)
         self.fov = 110  # horizontal field-of-view angle in degrees
-        self.viewplane_dis = 50  # distance of the viewplane relative to the camera
+        self.viewplane_dis = 200  # distance of the viewplane relative to the camera
+        self.viewplane_width = 2 * self.viewplane_dis * np.tan(np.deg2rad(self.fov / 2))  # explained in "Notizen"
+        self.viewplane_height = self.viewplane_width * (dims[1] / dims[0])
         self.speed = 1000
         self.rot_speed = .008
         self.mouse_control = mouse_control
@@ -56,14 +58,14 @@ class Camera:
 
     def rot_cam(self, rotation):
         # apply x-axis rotation
-        if rot_vec(self.up, rotation[0], self.right)[1] >= 0:   # makes sure the camera doesn't become upside down
+        if rot_vec(self.up, rotation[0], self.right)[1] >= 0:  # makes sure the camera doesn't become upside down
             self.up, self.dir = rot_vec(self.up, rotation[0], self.right), rot_vec(self.dir, rotation[0], self.right)
         # apply y-axis rotation (rotation around the global y-axis so that it doesn't rotate around the z-axis
         self.right = rot_vec(self.right, rotation[1], (0, 1, 0))
         self.up = rot_vec(self.up, rotation[1], (0, 1, 0))
         self.dir = rot_vec(self.dir, rotation[1], (0, 1, 0))
-    
-    def vp_rect(self, dims):    # vp stands for viewplane
+
+    def vp_rect(self, dims):  # vp stands for viewplane
         vp_width = 2 * self.viewplane_dis * np.tan(np.deg2rad(self.fov / 2))
         vp_height = vp_width / dims[0] * dims[1]
         vp_top_left = (self.pos[0] + self.dir[0] * self.viewplane_dis - self.right[0] * vp_width / 2,
