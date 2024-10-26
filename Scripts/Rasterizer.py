@@ -5,8 +5,8 @@ depth_map_active = []
 color_map = [[(0, 0, 0) for _ in range(dims[1])] for _ in range(dims[0])]
 
 
-def display_models():
-    for obj in models:
+def display_objects():
+    for obj in objects:
         display_triangles(obj)
 
 
@@ -19,7 +19,8 @@ def display_triangles(obj):
         vert2 = project2screen(trg.verts_gbl[1])
         vert3 = project2screen(trg.verts_gbl[2])
         if fill_triangles:
-            rasterize_triangle(vert1, vert2, vert3, trg.color)
+            trg_color = sm(trg.brightness, trg.max_color)
+            rasterize_triangle(vert1, vert2, vert3, trg_color)
         elif vert1 and vert2 and vert3:
             draw_triangle_mesh(vert1, vert2, vert3, trg.max_color)
 
@@ -126,5 +127,5 @@ def set_image():
 
 
 def rasterizer():
-    display_models()
+    display_objects()
     set_image()

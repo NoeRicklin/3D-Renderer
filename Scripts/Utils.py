@@ -50,7 +50,7 @@ def rot_vec(vector, angle, axis=(0, 1, 0)):  # rotate a vector around the axis, 
     return new_vector
 
 
-def convert_obj_file(path):
+def modelfile2object(path):
     file = open(path)
     lines_str = file.read().split("\n")
 

@@ -1,40 +1,41 @@
 import os
 from Utils import *
 from Camera import Camera
-from Models import Model
+from Objects import Object
 
 # lightsource Setup----------------------------------------------------------------------------------------------------
 light_source_dir = norm((0, 300, -500))
 environment_light_percent = 0.3  # amount of illumination in spots without direct lighting (value between 0 and 1)
+reflectivity = 5    # high number means less scattering
 # ---------------------------------------------------------------------------------------------------------------------
 
 
 # Objects Setup--------------------------------------------------------------------------------------------------------
-models = []
-plane = convert_obj_file("../Models/VideoShip.obj")
-triangle = convert_obj_file("../Models/Triangle.obj")
-square = convert_obj_file("../Models/Square.obj")
-# utah_teapot = convert_obj_file("../Models/Utah Teapot.obj")
-# mountains = convert_obj_file("../Models/mountains.obj")
-# sphere = convert_obj_file("../Models/sphere.obj")
-# sphere_high_poly = convert_obj_file("../Models/sphere_high_poly.obj")
+objects = []
+plane = modelfile2object("../Models/VideoShip.obj")
+triangle = modelfile2object("../Models/Triangle.obj")
+square = modelfile2object("../Models/Square.obj")
+utah_teapot = modelfile2object("../Models/Utah Teapot.obj")
+mountains = modelfile2object("../Models/mountains.obj")
+sphere = modelfile2object("../Models/sphere.obj")
+sphere_high_poly = modelfile2object("../Models/sphere_high_poly.obj")
 
-# models.append(Model(plane, (0, 0, 200), (255, 0, 0), 20, np.pi, (0.2, 1, -0.5)))
-# models.append(Model(plane, (0, -250, 1100), (255, 255, 255), 60))
-# models.append(Model(plane, (120, -350, 950), (0, 255, 255), 10))
-# models.append(Model(plane, (0, 0, 200), (0, 0, 255), 10))
-# models.append(Model(plane, (-300, 100, 400), (0, 255, 0), 90))
+# objects.append(Object(plane, (0, 0, 200), (255, 0, 0), 20, np.pi, (0.2, 1, -0.5)))
+# objects.append(Object(plane, (0, -250, 1100), (255, 255, 255), 60))
+# objects.append(Object(plane, (120, -350, 950), (0, 255, 255), 10))
+# objects.append(Object(plane, (0, 0, 200), (0, 0, 255), 10))
+# objects.append(Object(plane, (0, 100, 400), (0, 255, 0), 90, np.pi, (0.2, 1, -0.5)))
 
-models.append(Model(triangle, (0, 0, 450), (60, 180, 25), 1.5, 1))
-models.append(Model(triangle, (0, -100, 500), (120, 115, 210), 4))
+objects.append(Object(triangle, (0, 0, 450), (60, 180, 25), 1.5, 1))
+objects.append(Object(triangle, (0, -100, 500), (120, 115, 210), 4))
 
-# models.append(Model(square, (-150, 0, 300), (255, 255, 255), 100, 0))
-# models.append(Model(square, (150, 0, 300), (255, 255, 255), 100, 1.2, rot_axis=(1, 0, 0)))
+# objects.append(Object(square, (-150, 0, 300), (255, 255, 255), 100, 0))
+# objects.append(Object(square, (150, 0, 300), (255, 255, 255), 100, 1.2, rot_axis=(1, 0, 0)))
 
-# models.append(Model(sphere, (0, 0, 500), (0, 255, 240), 70))
-# models.append(Model(sphere_high_poly, (0, 0, 500), (0, 255, 240), 70))
+# objects.append(Object(sphere, (0, 0, 500), (0, 255, 240), 70))
+# objects.append(Object(sphere_high_poly, (0, 0, 500), (0, 255, 240), 70))
 
-# models.append(Model(utah_teapot, (0, -300, 1000), scale=100))
+# objects.append(Object(utah_teapot, (0, -300, 1000), scale=100))
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -46,8 +47,7 @@ skybox = pg.image.load("../Skyboxes/3x3_raster_image_flipped_upside_down1.jpg")
 
 # Raytracer Settings----------------------------------------------------------------------------------------------------
 res = (160, 90)  # hor and ver resolution (only whole numbers)
-highlight_strength = 35
-scatter_strength = 1
+highlight_strength = 100
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -68,5 +68,5 @@ show_fps = True
 
 
 # Camera Setup----------------------------------------------------------------------------------------------------------
-cam = Camera([0, 0, 0], dims)
+cam = Camera(dims)
 # ----------------------------------------------------------------------------------------------------------------------

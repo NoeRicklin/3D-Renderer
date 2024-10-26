@@ -1,7 +1,7 @@
 from Utils import *
 
 
-class Model:
+class Object:
     def __init__(self, verts_and_trgs, center, color=(255, 255, 255), scale=1, rot_angle=0, rot_axis=(0, 1, 0)):
         self.center = center
         self.vertices = [sm(scale, vertex) for vertex in verts_and_trgs[0]]
@@ -26,7 +26,7 @@ class Model:
         for trg in self.triangles:
             trg.center = rot_vec(trg.center, angle, axis)
             trg.normal = rot_vec(trg.normal, angle, axis)
-            trg.color = trg.calc_brightness(trg.max_color)
+            trg.color = trg.calc_brightness()
             trg.verts_gbl = trg.gbl_verts()
         self.aabb = self.boundingbox()
 
@@ -50,7 +50,7 @@ class Triangle:
         self.center = self.get_center()  # triangle-center relative to parent-center
         self.normal = self.get_normal()
         self.max_color = pg.Color(color)
-        self.color = self.calc_brightness(self.max_color)
+        self.brightness = self.calc_brightness()
 
     def lcl_vert(self, index):
         return self.parent.vertices[self.verts_ind[index]]
@@ -74,7 +74,8 @@ class Triangle:
         normal_vector = norm(np.cross(v1, v2))
         return normal_vector
 
-    def calc_brightness(self, max_col):
-        from Scene_Setup import light_source_dir, environment_light_percent
-        clamped_dot = max(0, np.dot(self.normal, light_source_dir))
-        return pg.Color(sm(environment_light_percent + clamped_dot - environment_light_percent * clamped_dot, max_col))
+    def calc_brightness(self):
+        from Scene_Setup import light_source_dir, environment_light_percent, reflectivity
+        direct_light_amount = clamp(np.dot(self.normal, light_source_dir) ** reflectivity, [0, 1])
+        total_lit_amount = clamp(direct_light_amount + environment_light_percent, [0, 1])
+        return total_lit_amount

@@ -19,7 +19,7 @@ def setup_rays():
             ray_cam_dir = norm(va(ray_pos, cam.pos, sign=-1))
             ray_dir = ray_cam_dir
             ray_screen_pos = (x * pixel_dims[0], y * pixel_dims[1])
-            ray_color = pg.Color(int(x / res[0] * 255), int(y / res[1] * 255), 0)[:3]
+            ray_color = (0, 0, 0)
 
             ray = PxlRay(ray_cam_pos, ray_pos, ray_cam_dir, ray_dir, ray_screen_pos, ray_color)
             rays.append(ray)
@@ -40,33 +40,31 @@ def draw_rays():
 
 
 def set_ray_color(ray):
-    hit_point, hit_norm, trg_color = find_ray_collision(ray)
+    hit_point, trg = find_ray_collision(ray)
     if not hit_point:
         if (look_sun := dot(ray.dir, light_source_dir)) > 0.999:  # draws the sun when the ray faces its direction
             ray.color = sm(look_sun ** 1000, (255, 255, 140))
             active_rays.append(ray)
         return
-    brightness = calc_brightness(ray, hit_point, hit_norm)
-    ray.color = sm(brightness, trg_color)
+    brightness = calc_brightness(ray, hit_point, trg.normal, trg.brightness)
+    ray.color = sm(brightness, trg.max_color[:3])
     active_rays.append(ray)
 
 
 def find_ray_collision(ray):
     nearest_hitpoint = None
-    nearest_hit_norm = None
-    nearest_hit_trg_color = None
-    for obj in models:
+    nearest_trg = None
+    for obj in objects:
         if not ray_box_hit(ray, obj):  # checks if the ray hits the bounding box of the object
             continue
-        hit_point, hit_norm, hit_color = ray_obj_hit(ray, obj)  # calculates the point where the ray hits the object
+        hit_point, trg = ray_obj_hit(ray, obj)  # calculates the point where the ray hits the object
         if not hit_point:
             continue
         if nearest_hitpoint and nearest_hitpoint[1] <= hit_point[1]:
             continue
         nearest_hitpoint = hit_point
-        nearest_hit_norm = hit_norm
-        nearest_hit_trg_color = hit_color
-    return nearest_hitpoint, nearest_hit_norm, nearest_hit_trg_color
+        nearest_trg = trg
+    return nearest_hitpoint, nearest_trg
 
 
 def ray_box_hit(ray, obj):
@@ -106,7 +104,7 @@ def ray_rect_hit(ray, rect, obj_center):
     # scales ray.dir to land on the plane on which the rectangle lies
     ray2obj = va(obj_center, ray.pos, sign=-1)  # relative position of the ray_start compared to the object
     ray_scalar = (ray2obj[rect[3]] + rect[rect[3]]) / ray.dir[rect[3]]
-    if ray_scalar < 0:  # clips of objects too close to the camera
+    if ray_scalar <= 0:  # ignores objects behind the camera
         return False
     scaled_dir = sm(ray_scalar, ray.dir)
     scaled_dir2obj = va(scaled_dir, ray2obj, sign=-1)
@@ -125,18 +123,16 @@ def ray_rect_hit(ray, rect, obj_center):
 
 def ray_obj_hit(ray, obj):
     nearest_hit_point = None
-    hit_surf_normal = None
-    color = None
+    nearest_collision_trg = None
 
     for trg in obj.triangles:
         if dot(ray.dir, trg.normal) > 0 - 0.00001:  # checks if the triangle is facing the camera
             continue
         if trg_hit := ray_trg_hit(ray, obj, trg):
-            if not nearest_hit_point or nearest_hit_point[1] > trg_hit[1]:
+            if (not nearest_hit_point) or nearest_hit_point[1] > trg_hit[1]:
                 nearest_hit_point = trg_hit
-                hit_surf_normal = trg.normal
-                color = trg.max_color[:3]
-    return nearest_hit_point, hit_surf_normal, color
+                nearest_collision_trg = trg
+    return nearest_hit_point, nearest_collision_trg
 
 
 def ray_trg_hit(ray, obj, trg):
@@ -159,14 +155,13 @@ def ray_trg_hit(ray, obj, trg):
         return hit_point, hit_dis
 
 
-def calc_brightness(ray, hit_point, surf_norm):
+def calc_brightness(ray, hit_point, surf_norm, surf_brightness):
     if not dot(surf_norm, light_source_dir) > 0 - 0.00001:
         return environment_light_percent
     if not check_open_light(hit_point[0]):
         return environment_light_percent
-    directly_lit_amount = calc_directly_lit_prob(ray, surf_norm)
-    lit_amount = clamp(directly_lit_amount + environment_light_percent, [0, 1])
-    return lit_amount
+    directly_lit_amount = calc_directly_lit_amount(ray, surf_norm, surf_brightness)
+    return directly_lit_amount
 
 
 def check_open_light(hit_point):
@@ -174,19 +169,18 @@ def check_open_light(hit_point):
     return not find_ray_collision(ray2light)[0]
 
 
-def calc_directly_lit_prob(ray, surf_norm):
+def calc_directly_lit_amount(ray, surf_norm, surf_brightness):
     reflected_ray_dir = refl_ray(ray, surf_norm)
-    reflect2light_prob = dot(reflected_ray_dir, light_source_dir) ** highlight_strength
-    scatter_amount = dot(surf_norm, light_source_dir) ** (1 / scatter_strength)
-    lit_prob = (reflect2light_prob + scatter_amount) / 2
-    return lit_prob
+    reflect2light_amount = dot(reflected_ray_dir, light_source_dir) ** highlight_strength - environment_light_percent
+    lit_amount = clamp(reflect2light_amount + surf_brightness, [0, 1])
+    return lit_amount
 
 
 def refl_ray(ray, surf_norm):
     n = surf_norm
     r = ray.dir
 
-    r_reflected = va(sm(2, va(r, sm(dot(r, n), n), sign=-1)), r, sign=-1)
+    r_reflected = va(r, sm(2, va(r, sm(dot(r, n), n), sign=-1)), sign=-1)
     return r_reflected
 
 
@@ -198,7 +192,7 @@ def check_point_in_aabb(point, obj_center, aabb):
 
 def draw_aabb():
     from Rasterizer import project2screen
-    for obj in models:
+    for obj in objects:
         obj_verts = []
         for vert_ind in range(8):
             vert_ind_bin = np.binary_repr(vert_ind, 3)
@@ -232,4 +226,4 @@ setup_rays()
 def raytracer():
     set_rays()
     draw_rays()
-    # draw_aabb()   # Für debugging
+    # draw_aabb()   # for debugging

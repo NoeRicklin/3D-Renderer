@@ -2,8 +2,8 @@ from Utils import *
 
 
 class Camera:
-    def __init__(self, pos, dims, mouse_control=True):
-        self.pos = pos
+    def __init__(self, dims, mouse_control=True):
+        self.pos = [0, 0, 0]
         self.right = (1, 0, 0)
         self.up = (0, 1, 0)
         self.dir = (0, 0, 1)
