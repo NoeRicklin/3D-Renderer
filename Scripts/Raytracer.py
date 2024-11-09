@@ -161,7 +161,8 @@ def calc_brightness(ray, hit_point, surf_norm, surf_brightness):
     if not check_open_light(hit_point[0]):
         return environment_light_percent
     directly_lit_amount = calc_directly_lit_amount(ray, surf_norm, surf_brightness)
-    return directly_lit_amount
+    lit_amount = clamp(directly_lit_amount, [environment_light_percent, 1])
+    return lit_amount
 
 
 def check_open_light(hit_point):

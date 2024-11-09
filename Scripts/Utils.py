@@ -1,7 +1,5 @@
 import numpy as np
 import pygame as pg
-import pyautogui as pag
-import win32api, win32con
 from sys import exit
 import time
 
@@ -77,13 +75,10 @@ def event_checks():
 
 
 def get_mouse_movement():
-    import Scene_Setup  # needs to import Scene_Setup as a whole to redefine its mouse_pos var
-    current_mouse_pos = pag.position()
-    delta_mouse = va(Scene_Setup.mouse_pos, current_mouse_pos, sign=-1)[::-1]
-    win32api.mouse_event(win32con.MOUSEEVENTF_MOVE | win32con.MOUSEEVENTF_ABSOLUTE,
-                         int(Scene_Setup.window_center[0] / 1920 * 65535.0),
-                         int(Scene_Setup.window_center[1] / 1080 * 65535.0))
-    Scene_Setup.mouse_pos = current_mouse_pos
+    from Scene_Setup import window_center
+    current_mouse_pos = pg.mouse.get_pos()
+    delta_mouse = va(current_mouse_pos, window_center, sign=-1)[::-1]
+    pg.mouse.set_pos(window_center)
     return delta_mouse
 
 
@@ -99,13 +94,10 @@ def drawline(start, end, color="White", width=2):
         pg.draw.line(screen, color, start, end, width)
 
 
-def print_fps():
+def print_time_per_frame():    # prints the time it took to render the latest frame
     import Scene_Setup as ss
     global dtime, stime
-    if ss.show_fps:
+    if ss.show_time_per_frame:
         dtime = -(stime - (time.time()))
         stime = time.time()
-        try:
-            print(f"{round(1 / dtime, 2)} FPS")
-        except ZeroDivisionError:
-            print(f"1042.37 FPS")
+        print(f"{round(dtime*1000)}ms per image")

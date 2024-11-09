@@ -32,3 +32,7 @@ Auch wurde die Skybox aus dem Rasterizer in den Raytracer übernommen.
 * 2024-10-13 - 2024-10-19: Fertigstellen des Rasterizer Kapitels
 * 2024-10-20: Schreiben der Einleitung für den Raytracer
 * 2024-10-25: Beginnen mit dem Schreiben der Implementation des Raytracers
+* 2024-10-27: Fertigstellen des Kapitels über die Implementation des Raytracers
+* 2024-11-03: Schreiben des Kapitels "Vorgehen und Methoden", der Übersicht in der Einleitung und Beginnen mit dem 
+Kapitel "Vergleiche und Resultate"
+* 2024-11-09: Fertigstellen des Kapitels "Vergleiche und Resultate"

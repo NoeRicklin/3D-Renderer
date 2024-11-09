@@ -5,14 +5,13 @@ from Skybox import draw_skybox
 
 while True:  # main loop in which everything happens
     event_checks()
-    print_fps()
+    print_time_per_frame()
 
-    get_mouse_movement()
     cam.move_cam()
 
     screen.fill("Black")
     draw_skybox()
 
-    raytracer()
+    rasterizer()
 
     pg.display.update()

@@ -12,8 +12,11 @@ class Camera:
         self.viewplane_width = 2 * self.viewplane_dis * np.tan(np.deg2rad(self.fov / 2))  # explained in "Notizen"
         self.viewplane_height = self.viewplane_width * (dims[1] / dims[0])
         self.speed = 1000
-        self.rot_speed = .008
+        self.rot_speed = .005
         self.mouse_control = mouse_control
+
+        if self.mouse_control:
+            pg.mouse.set_pos(sm(0.5, dims))
 
     def move_cam(self):  # camera controller to move the camera around with the keyboard
         velocity = [0, 0, 0]

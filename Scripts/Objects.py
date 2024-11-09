@@ -15,7 +15,6 @@ class Object:
         for trg in self.triangles:
             trg.verts_gbl = trg.gbl_verts()
 
-
     def translate_obj_by(self, translation):
         self.center = va(self.center, translation)
         for trg in self.triangles:
@@ -26,7 +25,7 @@ class Object:
         for trg in self.triangles:
             trg.center = rot_vec(trg.center, angle, axis)
             trg.normal = rot_vec(trg.normal, angle, axis)
-            trg.color = trg.calc_brightness()
+            trg.brightness = trg.calc_brightness()
             trg.verts_gbl = trg.gbl_verts()
         self.aabb = self.boundingbox()
 
@@ -71,11 +70,11 @@ class Triangle:
     def get_normal(self):  # vertices are assumed to be defined in clockwise-order when looked at from outside
         v1 = va(self.parent.vertices[self.verts_ind[1]], self.parent.vertices[self.verts_ind[0]], sign=-1)
         v2 = va(self.parent.vertices[self.verts_ind[2]], self.parent.vertices[self.verts_ind[1]], sign=-1)
-        normal_vector = norm(np.cross(v1, v2))
+        normal_vector = norm(np.cross(v1, v2))  # This error-message is a bug, it works fine.
         return normal_vector
 
     def calc_brightness(self):
         from Scene_Setup import light_source_dir, environment_light_percent, reflectivity
-        direct_light_amount = clamp(np.dot(self.normal, light_source_dir) ** reflectivity, [0, 1])
+        direct_light_amount = clamp(np.dot(self.normal, light_source_dir), [0, 1]) ** reflectivity
         total_lit_amount = clamp(direct_light_amount + environment_light_percent, [0, 1])
         return total_lit_amount
