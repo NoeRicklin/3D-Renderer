@@ -36,3 +36,4 @@ Auch wurde die Skybox aus dem Rasterizer in den Raytracer übernommen.
 * 2024-11-03: Schreiben des Kapitels "Vorgehen und Methoden", der Übersicht in der Einleitung und Beginnen mit dem 
 Kapitel "Vergleiche und Resultate"
 * 2024-11-09: Fertigstellen des Kapitels "Vergleiche und Resultate"
+* 2024-11-19: Letzte Überarbeitungen

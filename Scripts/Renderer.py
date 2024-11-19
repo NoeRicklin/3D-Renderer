@@ -12,6 +12,7 @@ while True:  # main loop in which everything happens
     screen.fill("Black")
     draw_skybox()
 
+    # Change either to <rasterizer()> or <raytracer()>
     rasterizer()
 
     pg.display.update()

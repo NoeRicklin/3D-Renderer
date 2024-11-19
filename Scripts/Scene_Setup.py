@@ -3,9 +3,9 @@ from Camera import Camera
 from Objects import Object
 
 # lightsource Setup-----------------------------------------------------------------------------------------------------
-light_source_dir = norm((0, 00, -500))     # direction to the lightsource
+light_source_dir = norm((0, 100, -500))     # direction to the lightsource
 environment_light_percent = 0.3  # amount of illumination in spots without direct lighting (value between 0 and 1)
-reflectivity = 4    # high number means less scattering
+reflectivity = 5    # high number means less scattering
 # ----------------------------------------------------------------------------------------------------------------------
 
 
